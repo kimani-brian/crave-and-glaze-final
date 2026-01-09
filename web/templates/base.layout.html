@@ -1,0 +1,82 @@
+{{define "base"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crave & Glaze | {{block "title" .}}Home{{end}}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+    <!-- NAVIGATION BAR -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand brand-font" href="/">
+                🎂 Crave & Glaze
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    
+                    <!-- Dynamic Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            Categories
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/cakes">All Cakes</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            {{if .Categories}}
+                                {{range .Categories}}
+                                    <li><a class="dropdown-item" href="/category?id={{.ID}}">{{.Name}}</a></li>
+                                {{end}}
+                            {{else}}
+                                <li><span class="dropdown-item text-muted">No categories yet</span></li>
+                            {{end}}
+                        </ul>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link position-relative" href="/cart">
+                            Cart 🛒
+                            <!-- Only show badge if CartCount > 0 (We will add this logic later) -->
+                             <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                                <span class="visually-hidden">New alerts</span>
+                              </span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-grow-1">
+        {{block "content" .}}
+        {{end}}
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer mt-auto py-4 bg-dark text-white">
+        <div class="container text-center">
+            <p class="mb-0">Fresh & Delicious Cakes Made with Love</p>
+            <small class="text-white-50">&copy; {{.CurrentYear}} Crave & Glaze. All rights reserved.</small>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+{{end}}

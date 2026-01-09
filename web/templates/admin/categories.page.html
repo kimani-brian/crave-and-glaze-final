@@ -1,0 +1,62 @@
+{{template "admin_base" .}}
+
+{{define "content"}}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <h2>Manage Cake Categories</h2>
+        <p class="text-muted">Add categories here to make them appear in the shop navbar.</p>
+    </div>
+
+    <!-- Left Column: List -->
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">Existing Categories</div>
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Slug</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Categories}}
+                    <tr>
+                        <td>{{.ID}}</td>
+                        <td><strong>{{.Name}}</strong></td>
+                        <td><code>/{{.Slug}}</code></td>
+                        <td>
+                            <!-- Delete Form -->
+                            <form action="/admin/categories/delete" method="POST" onsubmit="return confirm('Are you sure you want to delete {{.Name}}?');">
+                                <input type="hidden" name="id" value="{{.ID}}">
+                                <button class="btn btn-sm btn-outline-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {{else}}
+                    <tr><td colspan="4" class="text-center">No categories found.</td></tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Right Column: Add Form -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 bg-light">
+            <div class="card-body">
+                <h5 class="card-title">Add New Category</h5>
+                <hr>
+                <form action="/admin/categories/add" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Category Name</label>
+                        <input type="text" name="name" class="form-control" placeholder="e.g. Anniversary Cakes" required>
+                    </div>
+                    <button class="btn btn-primary w-100">Save Category</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

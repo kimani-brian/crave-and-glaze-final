@@ -1,0 +1,60 @@
+{{template "admin_base" .}}
+
+{{define "content"}}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Recent Orders</h2>
+    <span class="badge bg-secondary">{{len .Orders}} Total Orders</span>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-striped table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Customer</th>
+                    <th>Phone</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Items</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Orders}}
+                <tr>
+                    <td>#{{.ID}}</td>
+                    <td>{{.CustomerName}}</td>
+                    <td>{{.CustomerPhone}}</td>
+                    <td class="fw-bold">KES {{.TotalAmount}}</td>
+                    <td>
+                        {{if eq .Status "PAID"}}
+                            <span class="badge bg-success">PAID</span>
+                        {{else if eq .Status "PENDING"}}
+                            <span class="badge bg-warning text-dark">PENDING</span>
+                        {{else}}
+                            <span class="badge bg-secondary">{{.Status}}</span>
+                        {{end}}
+                    </td>
+                    <td><a href="/admin/orders/view?id={{.ID}}" class="btn btn-sm btn-primary">View Details</a></td> ->
+                    <td>
+                        <!-- Action Forms -->
+                        {{if eq .Status "PENDING"}}
+                        <form action="/admin/order/status" method="POST" class="d-inline">
+                            <input type="hidden" name="order_id" value="{{.ID}}">
+                            <input type="hidden" name="status" value="PAID">
+                            <button class="btn btn-sm btn-success">Mark Paid</button>
+                        </form>
+                        {{end}}
+                    </td>
+                </tr>
+                {{else}}
+                <tr>
+                    <td colspan="7" class="text-center py-4">No orders found yet.</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+{{end}}

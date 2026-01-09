@@ -1,0 +1,69 @@
+{{template "base" .}}
+
+{{define "title"}}Checkout{{end}}
+
+{{define "content"}}
+<div class="container py-5">
+    <div class="row">
+        
+        <!-- Order Summary (Left Side) -->
+        <div class="col-md-5 order-md-2 mb-4">
+            <h4 class="d-flex justify-content-between align-items-center mb-3">
+                <span class="text-primary">Your Cart</span>
+                <span class="badge bg-primary rounded-pill">{{len .Data.Items}} items</span>
+            </h4>
+            <ul class="list-group mb-3 shadow-sm">
+                {{range .Data.Items}} <!-- UPDATED -->
+                <li class="list-group-item d-flex justify-content-between lh-sm">
+                    <div>
+                        <h6 class="my-0">{{.ProductName}}</h6>
+                        <small class="text-muted">Qty: {{.Quantity}}</small>
+                    </div>
+                    <span class="text-muted">KES {{.Price}}</span>
+                </li>
+                {{end}}
+                <li class="list-group-item d-flex justify-content-between bg-light">
+                    <span class="fw-bold">Total (KES)</span>
+                    <strong class="text-success">{{.Data.Total}}</strong> <!-- UPDATED -->
+                </li>
+            </ul>
+        </div>
+
+        <!-- Billing Details (Right Side) -->
+        <div class="col-md-7 order-md-1">
+            <h2 class="mb-3 brand-font">Checkout Details</h2>
+            <div class="card p-4 shadow-sm border-0">
+                <form action="/checkout" method="POST">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="name" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="name" name="name" placeholder="John Doe" required>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="phone" class="form-label">M-PESA Phone Number</label>
+                            <div class="input-group">
+                                <span class="input-group-text">+254</span>
+                                <input type="tel" class="form-control" id="phone" name="phone" placeholder="712345678" required>
+                            </div>
+                            <small class="text-muted">Enter the number that will pay via MPESA.</small>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <h4 class="mb-3">Payment</h4>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-info-circle"></i> 
+                        Payment will be requested on your phone via MPESA immediately after you click "Place Order".
+                    </div>
+
+                    <button class="w-100 btn btn-primary btn-lg rounded-pill" type="submit">
+                        Place Order & Pay KES {{.Data.Total}} <!-- UPDATED -->
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

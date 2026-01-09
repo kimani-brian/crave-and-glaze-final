@@ -1,0 +1,38 @@
+{{template "base" .}}
+
+{{define "title"}}Payment{{end}}
+
+{{define "content"}}
+<div class="container py-5 text-center">
+    <div class="card shadow-lg border-0 mx-auto" style="max-width: 500px;">
+        <div class="card-body p-5">
+            <div class="mb-4">
+                <!-- Using a simple spinner or icon -->
+                <div class="spinner-grow text-success" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+
+            <h2 class="mb-3">Check your Phone!</h2>
+            <p class="lead text-muted">
+                We have sent an M-PESA payment request to <strong>+{{.Phone}}</strong> for <strong>KES {{.Amount}}</strong>.
+            </p>
+
+            <div class="alert alert-info mt-4 text-start">
+                <small>
+                    <strong>Instructions:</strong><br>
+                    1. Unlock your phone.<br>
+                    2. Enter your M-PESA PIN on the pop-up.<br>
+                    3. Wait for the confirmation SMS.
+                </small>
+            </div>
+
+            <hr>
+            
+            <p>Did the prompt fail to appear?</p>
+            <a href="/payment?order_id={{.OrderID}}" class="btn btn-outline-primary btn-sm">Retry Request</a>
+            <a href="/" class="btn btn-link btn-sm text-decoration-none">Return Home</a>
+        </div>
+    </div>
+</div>
+{{end}}

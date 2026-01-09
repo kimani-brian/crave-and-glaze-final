@@ -1,0 +1,45 @@
+{{template "base" .}}
+
+{{define "title"}}Fresh Cakes{{end}}
+
+{{define "content"}}
+<!-- Hero Section -->
+<section class="hero-section text-center py-5">
+    <div class="container">
+        <span class="badge bg-warning text-dark mb-2">Welcome to Crave & Glaze</span>
+        <h1 class="display-4 fw-bold hero-title">Fresh & <span class="text-highlight">Delicious</span> Cakes</h1>
+        <p class="lead text-muted">Indulge in our handcrafted cakes, made fresh daily.</p>
+        <a href="/cakes" class="btn btn-primary btn-lg mt-3">Explore Our Cakes &rarr;</a>
+    </div>
+</section>
+
+<!-- Featured Products Grid -->
+<div class="container py-5">
+    <h3 class="text-center mb-4">Customer Favorites</h3>
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        
+        <!-- Loop through products (We will send this data from Go later) -->
+        {{range .Products}}
+        <div class="col">
+            <div class="card h-100 shadow-sm border-0 cake-card">
+                <!-- Placeholder image for now -->
+                <img src="/static/img/cake-placeholder.jpg" class="card-img-top" alt="{{.Name}}" style="height: 250px; object-fit: cover;">
+                <div class="card-body">
+                    <h5 class="card-title">{{.Name}}</h5>
+                    <p class="card-text text-muted small">{{.Description}}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-primary">From KES {{.StartingPrice}}</span>
+                        <a href="/product?id={{.ID}}" class="btn btn-outline-danger btn-sm">View Options</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{else}}
+            <div class="col-12 text-center">
+                <p>No cakes available at the moment. Check back soon!</p>
+            </div>
+        {{end}}
+
+    </div>
+</div>
+{{end}}

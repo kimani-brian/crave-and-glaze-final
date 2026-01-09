@@ -1,0 +1,100 @@
+{{template "base" .}}
+
+{{define "title"}}{{ .Product.Name }}{{end}}
+
+{{define "content"}}
+<div class="container py-5">
+    <div class="row">
+        <!-- Product Image -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm">
+                <!-- Using the dummy image for now if URL is empty or local -->
+                <img src="/static/img/cake-placeholder.jpg" class="card-img-top rounded" alt="{{.Product.Name}}">
+            </div>
+        </div>
+
+        <!-- Product Details -->
+        <div class="col-md-6">
+            <h1 class="display-5 fw-bold brand-font">{{.Product.Name}}</h1>
+            <p class="text-muted">{{.Product.Description}}</p>
+            <hr>
+
+            <!-- Price Display -->
+            <h2 class="text-danger fw-bold mb-4" id="price-display">
+                KES <span>---</span>
+            </h2>
+
+            <!-- Add to Cart Form -->
+            <form action="/cart/add" method="POST">
+                <input type="hidden" name="product_id" value="{{.Product.ID}}">
+                
+                <!-- Size Selection -->
+                <div class="mb-3">
+                    <label for="variant" class="form-label fw-bold">Select Size (Weight)</label>
+                    <select class="form-select" id="variant-select" name="variant_id" required>
+                        <option value="" selected disabled>Choose a size...</option>
+                        {{range .Variants}}
+                            <!-- We store the price in a data attribute for JS to read -->
+                            <option value="{{.ID}}" data-price="{{.Price}}">
+                                {{.WeightLabel}}
+                            </option>
+                        {{end}}
+                    </select>
+                </div>
+
+                <!-- Custom Message -->
+                <div class="mb-3">
+                    <label for="message" class="form-label fw-bold">Message on Cake</label>
+                    <input type="text" class="form-control" name="message" placeholder="e.g. Happy Birthday Jadon!">
+                </div>
+
+                <!-- Icing Flavor -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Preferred Icing</label>
+                    <select class="form-select" name="icing">
+                        <option value="Whipping Cream">Whipping Cream</option>
+                        <option value="Buttercream">Buttercream</option>
+                        <option value="Fondant">Fondant (Hard Icing)</option>
+                    </select>
+                </div>
+
+                <!-- Quantity -->
+                <div class="mb-3 w-25">
+                    <label class="form-label fw-bold">Quantity</label>
+                    <input type="number" name="quantity" class="form-control" value="1" min="1">
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg w-100 mt-2">
+                    Add to Cart 🛒
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Dynamic Price Update -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const variantSelect = document.getElementById('variant-select');
+        const priceDisplay = document.querySelector('#price-display span');
+
+        variantSelect.addEventListener('change', function() {
+            // Get the selected option
+            const selectedOption = this.options[this.selectedIndex];
+            // Read the data-price attribute
+            const price = selectedOption.getAttribute('data-price');
+            
+            if (price) {
+                // Update the text
+                priceDisplay.textContent = price;
+            }
+        });
+        
+        // Auto-select first option if available to show a price immediately (optional)
+        if(variantSelect.options.length > 1) {
+             variantSelect.selectedIndex = 1;
+             variantSelect.dispatchEvent(new Event('change'));
+        }
+    });
+</script>
+{{end}}

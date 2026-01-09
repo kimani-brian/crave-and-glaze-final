@@ -1,0 +1,95 @@
+{{template "base" .}}
+
+{{define "title"}}Your Cart{{end}}
+
+{{define "content"}}
+<div class="container py-5">
+    <h1 class="mb-4 brand-font">Shopping Cart</h1>
+
+    <div class="row">
+        <!-- Cart Items List -->
+        <div class="col-md-8">
+            {{if .Data.Items}}
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-0">
+                        <table class="table table-hover mb-0">
+                            <!-- Table Header -->
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Details</th>
+                                    <th>Price</th>
+                                    <th>Qty</th>
+                                    <th>Action</th> <!-- Header for the remove button -->
+                                </tr>
+                            </thead>
+                            
+                            <!-- Table Body (Loop) -->
+                            <tbody>
+                                {{range .Data.Items}} 
+                                <tr>
+                                    <td>
+                                        <span class="fw-bold">{{.ProductName}}</span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted d-block">Icing: {{.Icing}}</small>
+                                        {{if .Message}}
+                                        <small class="text-muted fst-italic">"{{.Message}}"</small>
+                                        {{end}}
+                                    </td>
+                                    <td>{{.Price}}</td>
+                                    <td>{{.Quantity}}</td>
+                                    
+                                    <!-- Remove Button Column -->
+                                    <td class="text-end">
+                                        <form action="/cart/remove" method="POST">
+                                            <input type="hidden" name="variant_id" value="{{.VariantID}}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove Item">
+                                                &times; Remove
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {{end}}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {{else}}
+                <div class="alert alert-info">
+                    Your cart is empty. <a href="/cakes">Go get some cake!</a>
+                </div>
+            {{end}}
+        </div>
+
+        <!-- Checkout Summary -->
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 bg-light">
+                <div class="card-body">
+                    <h4 class="card-title">Order Summary</h4>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Subtotal</span>
+                        <span class="fw-bold">KES {{.Data.Total}}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3 text-muted">
+                        <span>Delivery</span>
+                        <span>Calculated at checkout</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-4">
+                        <span class="h5">Total</span>
+                        <span class="h5 text-primary">KES {{.Data.Total}}</span>
+                    </div>
+
+                    {{if .Data.Items}}
+                    <a href="/checkout" class="btn btn-success w-100 btn-lg">
+                        Proceed to Checkout &rarr;
+                    </a>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

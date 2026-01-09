@@ -1,0 +1,55 @@
+:root {
+    --primary-color: #E85D75; /* Pinkish Red */
+    --secondary-color: #FCE1E4; /* Light Pastel Pink */
+    --accent-color: #F49D37; /* Orange/Gold */
+    --text-dark: #2D2D2D;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #FFFDF9; /* Very light cream */
+    color: var(--text-dark);
+}
+
+.brand-font {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: var(--primary-color) !important;
+}
+
+.hero-section {
+    background: linear-gradient(135deg, #fff 0%, #FFF0F5 100%);
+    padding: 80px 0;
+}
+
+.hero-title {
+    font-family: 'Playfair Display', serif;
+    color: var(--text-dark);
+}
+
+.text-highlight {
+    color: var(--primary-color);
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    padding: 10px 30px;
+    border-radius: 50px;
+}
+
+.btn-primary:hover {
+    background-color: #D1405A;
+    border-color: #D1405A;
+}
+
+.cake-card {
+    transition: transform 0.3s ease;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.cake-card:hover {
+    transform: translateY(-5px);
+}

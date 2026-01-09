@@ -1,0 +1,32 @@
+{{template "base" .}}
+
+{{define "title"}}Category{{end}}
+
+{{define "content"}}
+<div class="container py-5">
+    <h2 class="mb-4 text-center">Our Delicious Cakes</h2>
+    
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {{range .Products}}
+        <div class="col">
+            <div class="card h-100 shadow-sm border-0 cake-card">
+                <img src="{{.ImageURL}}" class="card-img-top" alt="{{.Name}}" style="height: 250px; object-fit: cover;">
+                <div class="card-body">
+                    <h5 class="card-title">{{.Name}}</h5>
+                    <p class="card-text text-muted small">{{.Description}}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-primary">From KES {{.StartingPrice}}</span>
+                        <a href="/product?id={{.ID}}" class="btn btn-outline-danger btn-sm">View Options</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{else}}
+            <div class="col-12 text-center py-5">
+                <h4 class="text-muted">No cakes found in this category yet.</h4>
+                <a href="/" class="btn btn-primary mt-3">Back to Home</a>
+            </div>
+        {{end}}
+    </div>
+</div>
+{{end}}

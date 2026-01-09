@@ -1,0 +1,16 @@
+# Ignore the environment file containing secrets
+.env
+
+# Ignore binary executables
+crave-and-glaze
+main
+*.exe
+
+# Ignore Mac system files
+.DS_Store
+
+# Ignore VS Code settings
+.vscode/
+
+# Ignore Docker data if you mapped it locally
+postgres_data/
