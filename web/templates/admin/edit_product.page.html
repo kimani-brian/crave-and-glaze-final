@@ -1,0 +1,73 @@
+{{template "admin_base" .}}
+
+{{define "content"}}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Edit Cake: <span class="text-primary">{{.Product.Name}}</span></h2>
+        <a href="/admin/products" class="btn btn-secondary">Cancel</a>
+    </div>
+
+    <form action="/admin/products/edit" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="id" value="{{.Product.ID}}">
+        <input type="hidden" name="existing_image" value="{{.Product.ImageURL}}">
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card p-4 shadow-sm mb-4">
+                    <div class="mb-3">
+                        <label>Cake Name</label>
+                        <input type="text" name="name" class="form-control" value="{{.Product.Name}}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Description</label>
+                        <textarea name="description" class="form-control" rows="3">{{.Product.Description}}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Category</label>
+                        <select name="category_id" class="form-select">
+                            {{$currentCat := .Product.Category}}
+                            {{range .Categories}}
+                            <!-- Simple logic to select current category -->
+                            <option value="{{.ID}}">{{.Name}}</option>
+                            {{end}}
+                        </select>
+                        <small class="text-muted">Currently in category ID: {{$currentCat}}</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Update Image (Optional)</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <img src="{{.Product.ImageURL}}" width="60" class="rounded border">
+                            <input type="file" name="image" class="form-control" accept="image/*">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card bg-light p-3 shadow-sm">
+                    <h5>Update Prices</h5>
+                    <p class="text-muted small">Change prices for existing sizes.</p>
+
+                    {{range .Variants}}
+                    <div class="mb-3">
+                        <label class="fw-bold">{{.WeightLabel}}</label>
+                        <div class="input-group">
+                            <span class="input-group-text">KES</span>
+                            <!-- Name format: price_VARIANT_ID -->
+                            <input type="number" name="price_{{.ID}}" class="form-control" value="{{.Price}}">
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+                
+                <button type="submit" class="btn btn-success btn-lg w-100 mt-3">
+                    💾 Save Changes
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{{end}}

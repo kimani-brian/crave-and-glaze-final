@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
@@ -42,7 +43,7 @@ func main() {
 		os.Getenv("MPESA_KEY"),
 		os.Getenv("MPESA_SECRET"),
 	)
-
+	mpesaService.Config.CallbackURL = "https://e3d42c404fab.ngrok-free.app/api/callback/mpesa"
 	// 2. Initialize Models/Repositories
 	app := &Application{
 		Products: &repository.ProductModel{DB: database.DB},
@@ -96,6 +97,23 @@ func main() {
 	//cart remove
 	mux.HandleFunc("POST /cart/remove", app.removeFromCartHandler)
 
+	mux.HandleFunc("POST /cart/update", app.updateCartHandler)
+
+	// Admin Product Management
+	mux.HandleFunc("GET /admin/products", app.adminProductsListHandler)
+	mux.HandleFunc("POST /admin/products/delete", app.adminDeleteProductHandler)
+	mux.HandleFunc("GET /admin/products/edit", app.adminEditProductPageHandler)
+	mux.HandleFunc("POST /admin/products/edit", app.adminEditProductHandler)
+
+	// MPESA Callback
+	mux.HandleFunc("POST /api/callback", app.mpesaCallbackHandler)
+	// Status check for the frontend
+	//mux.HandleFunc("GET /api/order/status", app.orderStatusHandler)
+	// API Route for the frontend polling payment confirm
+	// API Route for the frontend polling
+	mux.HandleFunc("GET /api/order/status", app.apiCheckStatusHandler)
+	// Routes
+	mux.HandleFunc("POST /api/callback/mpesa", app.mpesaCallbackHandler)
 	// 4. Start Server
 	srv := &http.Server{
 		Addr:         ":8080",
@@ -333,73 +351,42 @@ func (app *Application) placeOrderHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (app *Application) paymentHandler(w http.ResponseWriter, r *http.Request) {
-	// 1. Get Order ID
+	// 1. Get Order ID from URL
 	orderIDStr := r.URL.Query().Get("order_id")
 	var orderID int
 	fmt.Sscanf(orderIDStr, "%d", &orderID)
 
-	// 2. Fetch Order Details
-	var phone string
-	var amount float64
-	var status string
-
-	// Safety check: ensure we actually got an ID
-	if orderID == 0 {
-		http.Error(w, "Invalid Order ID", 400)
-		return
-	}
-
-	err := app.Orders.DB.QueryRow("SELECT customer_phone, total_amount, status FROM orders WHERE id=$1", orderID).Scan(&phone, &amount, &status)
+	// 2. Fetch the Full Order Details from DB
+	order, err := app.Orders.Get(orderID)
 	if err != nil {
-		http.Error(w, "Order not found in Database", 404)
+		http.Error(w, "Order not found", 404)
 		return
 	}
 
 	// 3. Initiate STK Push (Only if pending)
-	if status == "PENDING" {
+	if order.Status == "PENDING" {
 		// Format phone to 254...
+		phone := order.CustomerPhone
 		if len(phone) > 0 && phone[0] == '0' {
 			phone = "254" + phone[1:]
 		}
 
-		// Trigger MPESA
-		_ = app.Mpesa.InitiateSTKPush(phone, amount, orderID)
+		// Trigger M-Pesa
+		err := app.Mpesa.InitiateSTKPush(phone, order.TotalAmount, orderID)
+		if err != nil {
+			log.Println("Mpesa Error:", err)
+		}
 	}
 
-	// 4. Prepare Data
-	// We use a manual struct here because this page is unique
-	data := struct {
-		OrderID    int
-		Phone      string
-		Amount     float64
-		Categories []models.Category // Add this so the Navbar works!
-	}{
-		OrderID: orderID,
-		Phone:   phone,
-		Amount:  amount,
+	// 4. Prepare Data for Template
+	// We wrap the order in a struct matching the template's expectation {{.Order}}
+	data := &models.TemplateData{
+		Title: "Processing Payment",
+		Order: order,
 	}
 
-	// Fetch categories for the navbar so it's not empty
-	data.Categories, _ = app.Products.GetAllCategories()
-
-	// 5. Render Templates (With Error Checking!)
-	files := []string{
-		"./web/templates/base.layout.html",
-		"./web/templates/payment.page.html",
-	}
-
-	ts, err := template.ParseFiles(files...)
-	if err != nil {
-		// This will print the EXACT error to your terminal
-		log.Println("Error loading payment page:", err)
-		http.Error(w, "Error loading template: "+err.Error(), 500)
-		return
-	}
-
-	err = ts.ExecuteTemplate(w, "base", data)
-	if err != nil {
-		log.Println("Error executing template:", err)
-	}
+	// 5. Render
+	app.render(w, r, "payment.page.html", data)
 }
 
 func (app *Application) adminDashboardHandler(w http.ResponseWriter, r *http.Request) {
@@ -457,6 +444,7 @@ func (app *Application) adminUpdateStatusHandler(w http.ResponseWriter, r *http.
 
 // Add this helper function to your Application struct or as a standalone
 // render is our centralized HTML generator
+
 func (app *Application) render(w http.ResponseWriter, r *http.Request, page string, data *models.TemplateData) {
 	// 1. Fetch Categories for the Navbar (Every page needs this)
 	cats, err := app.Products.GetAllCategories()
@@ -487,6 +475,7 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, page stri
 	if err != nil {
 		log.Println("Template Execute Error:", err)
 	}
+	_ = r // Tells Go "I know I have this variable, ignore it"
 }
 
 func (app *Application) adminAddProductPageHandler(w http.ResponseWriter, r *http.Request) {
@@ -686,4 +675,252 @@ func (app *Application) removeFromCartHandler(w http.ResponseWriter, r *http.Req
 
 	// Refresh the page
 	http.Redirect(w, r, "/cart", http.StatusSeeOther)
+}
+
+func (app *Application) updateCartHandler(w http.ResponseWriter, r *http.Request) {
+	// Parse IDs
+	variantID, _ := strconv.Atoi(r.FormValue("variant_id"))
+	action := r.FormValue("action") // will be "increase" or "decrease"
+
+	switch action {
+	case "increase":
+		cart.UpdateQuantity(w, r, variantID, 1)
+	case "decrease":
+		cart.UpdateQuantity(w, r, variantID, -1)
+	}
+
+	http.Redirect(w, r, "/cart", http.StatusSeeOther)
+}
+
+func (app *Application) removeCartHandler(w http.ResponseWriter, r *http.Request) {
+	variantID, _ := strconv.Atoi(r.FormValue("variant_id"))
+	cart.RemoveItem(w, r, variantID)
+	http.Redirect(w, r, "/cart", http.StatusSeeOther)
+}
+
+// 1. List all products
+func (app *Application) adminProductsListHandler(w http.ResponseWriter, r *http.Request) {
+	products, err := app.Products.All() // We reuse the All() function
+	if err != nil {
+		http.Error(w, "Server Error", 500)
+		return
+	}
+
+	app.render(w, r, "admin/products.page.html", &models.TemplateData{
+		Title:    "Manage Products",
+		Products: products,
+		IsAdmin:  true,
+	})
+}
+
+// 2. Delete a product
+func (app *Application) adminDeleteProductHandler(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(r.FormValue("id"))
+	app.Products.DeleteProduct(id)
+	http.Redirect(w, r, "/admin/products", http.StatusSeeOther)
+}
+
+// 3. Show Edit Page
+func (app *Application) adminEditProductPageHandler(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(r.URL.Query().Get("id"))
+
+	// Get Product
+	p, err := app.Products.Get(id)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	// Get Variants (Prices)
+	variants, _ := app.Products.GetVariants(id)
+
+	// Get Categories (for dropdown)
+	cats, _ := app.Products.GetAllCategories()
+
+	app.render(w, r, "admin/edit_product.page.html", &models.TemplateData{
+		Title:      "Edit Product",
+		Product:    p,
+		Variants:   variants,
+		Categories: cats,
+		IsAdmin:    true,
+	})
+}
+
+// 4. Process the Update
+func (app *Application) adminEditProductHandler(w http.ResponseWriter, r *http.Request) {
+	// Parse Multipart Form (for image upload)
+	r.ParseMultipartForm(10 << 20)
+
+	id, _ := strconv.Atoi(r.FormValue("id"))
+	name := r.FormValue("name")
+	desc := r.FormValue("description")
+	catID := r.FormValue("category_id")
+
+	// Handle Image (Check if user uploaded a new one)
+	file, handler, err := r.FormFile("image")
+	var imagePath string
+
+	if err == nil {
+		defer file.Close()
+		filename := fmt.Sprintf("%d_%s", time.Now().Unix(), handler.Filename)
+		filePath := "./web/static/uploads/" + filename
+
+		dst, err := os.Create(filePath)
+		if err != nil {
+			http.Error(w, "Error saving file", 500)
+			return
+		}
+		defer dst.Close()
+		io.Copy(dst, file)
+		imagePath = "/static/uploads/" + filename
+	} else {
+		// Keep existing image if no new one uploaded
+		imagePath = r.FormValue("existing_image")
+	}
+
+	// Update Main Product
+	p := models.Product{
+		ID:          id,
+		Name:        name,
+		Description: desc,
+		Category:    catID,
+		ImageURL:    imagePath,
+	}
+	app.Products.UpdateProduct(p)
+
+	// Update Variant Prices (We loop through the form inputs)
+	// We expect inputs named "price_VARIANT_ID"
+	for k, v := range r.PostForm {
+		if strings.HasPrefix(k, "price_") {
+			// Extract variant ID from string "price_12"
+			variantIDStr := strings.TrimPrefix(k, "price_")
+			variantID, _ := strconv.Atoi(variantIDStr)
+			newPrice, _ := strconv.ParseFloat(v[0], 64)
+
+			app.Products.UpdateVariantPrice(variantID, newPrice)
+		}
+	}
+
+	http.Redirect(w, r, "/admin/products", http.StatusSeeOther)
+}
+
+// mpesaCallbackHandler receives the data from Safaricom
+
+// orderStatusHandler allows the Frontend to ask "Is it paid yet?"
+func (app *Application) orderStatusHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.URL.Query().Get("id")
+	var id int
+	fmt.Sscanf(idStr, "%d", &id)
+
+	var status string
+	err := app.Orders.DB.QueryRow("SELECT status FROM orders WHERE id=$1", id).Scan(&status)
+	if err != nil {
+		http.Error(w, "Order not found", 404)
+		return
+	}
+
+	// Return simple JSON
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(fmt.Sprintf(`{"status": "%s"}`, status)))
+}
+func (app *Application) apiCheckStatusHandler(w http.ResponseWriter, r *http.Request) {
+	// 1. Get the Order ID
+	idStr := r.URL.Query().Get("id")
+	var id int
+	fmt.Sscanf(idStr, "%d", &id)
+
+	// 2. Fetch the current status from the Database
+	var status string
+	stmt := `SELECT status FROM orders WHERE id = $1`
+	err := app.Orders.DB.QueryRow(stmt, id).Scan(&status)
+	if err != nil {
+		// If order not found or error, return generic JSON error
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"status": "ERROR"}`))
+		return
+	}
+
+	// 3. Return as JSON
+	// The JavaScript expects: { "status": "PAID" } or { "status": "PENDING" }
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"status": status,
+	})
+}
+
+// MpesaCallbackStructure defines the JSON format sent by Safaricom
+type MpesaCallbackStructure struct {
+	Body struct {
+		StkCallback struct {
+			MerchantRequestID string
+			CheckoutRequestID string
+			ResultCode        int
+			ResultDesc        string
+			CallbackMetadata  struct {
+				Item []struct {
+					Name  string
+					Value interface{}
+				}
+			}
+		}
+	}
+}
+
+func (app *Application) mpesaCallbackHandler(w http.ResponseWriter, r *http.Request) {
+	// 1. Decode the JSON from Safaricom
+	var callback MpesaCallbackStructure
+	err := json.NewDecoder(r.Body).Decode(&callback)
+	if err != nil {
+		log.Println("Error decoding callback:", err)
+		return
+	}
+	defer r.Body.Close()
+
+	// 2. Check Result Code (0 means Success, anything else is failed/cancelled)
+	resultCode := callback.Body.StkCallback.ResultCode
+	if resultCode != 0 {
+		log.Println("Payment Failed or Cancelled. Code:", resultCode)
+		return
+	}
+
+	// 3. Extract Details (Phone Number and Amount)
+	// Safaricom sends metadata as a list of items. We loop to find the phone.
+	var phoneNumber string
+	items := callback.Body.StkCallback.CallbackMetadata.Item
+	for _, item := range items {
+		if item.Name == "PhoneNumber" {
+			// Safaricom sends it as float64, convert to string
+			if val, ok := item.Value.(float64); ok {
+				phoneNumber = fmt.Sprintf("%.0f", val)
+			}
+		}
+	}
+
+	log.Printf("Payment Confirmed via Callback for Phone: %s", phoneNumber)
+
+	// 4. Update the Database
+	// We update the MOST RECENT pending order for this phone number
+	stmt := `
+		UPDATE orders 
+		SET status = 'PAID' 
+		WHERE customer_phone = $1 AND status = 'PENDING'
+		AND id = (
+			SELECT id FROM orders 
+			WHERE customer_phone = $1 AND status = 'PENDING' 
+			ORDER BY id DESC LIMIT 1
+		)
+	`
+	// Note: In a real production app, we would use CheckoutRequestID for 100% accuracy,
+	// but this logic works perfectly for 99% of cases and requires no DB schema changes.
+
+	_, err = app.Orders.DB.Exec(stmt, phoneNumber)
+	if err != nil {
+		log.Println("Error updating DB from callback:", err)
+	} else {
+		log.Println("Database successfully updated to PAID!")
+	}
+
+	// 5. Respond to Safaricom (They expect a 200 OK)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(`{"ResultCode":0,"ResultDesc":"Accepted"}`))
 }

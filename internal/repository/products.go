@@ -170,3 +170,35 @@ func (m *ProductModel) DeleteCategory(id int) error {
 	_, err := m.DB.Exec(stmt, id)
 	return err
 }
+
+// UpdateProduct updates the main details of a cake
+func (m *ProductModel) UpdateProduct(p models.Product) error {
+	stmt := `
+		UPDATE products 
+		SET name = $1, description = $2, category_id = $3, image_url = $4 
+		WHERE id = $5
+	`
+	// Note: We need to convert p.Category (string) back to Int for the DB
+	// If p.Category is just the ID string "1", this works.
+	_, err := m.DB.Exec(stmt, p.Name, p.Description, p.Category, p.ImageURL, p.ID)
+	return err
+}
+
+// UpdateVariantPrice updates the price of a specific size option
+func (m *ProductModel) UpdateVariantPrice(variantID int, newPrice float64) error {
+	stmt := `UPDATE product_variants SET price = $1 WHERE id = $2`
+	_, err := m.DB.Exec(stmt, newPrice, variantID)
+	return err
+}
+
+// DeleteProduct removes a product (and its variants)
+func (m *ProductModel) DeleteProduct(id int) error {
+	// 1. Delete variants first (to prevent foreign key errors)
+	_, err := m.DB.Exec("DELETE FROM product_variants WHERE product_id = $1", id)
+	if err != nil {
+		return err
+	}
+	// 2. Delete the product
+	_, err = m.DB.Exec("DELETE FROM products WHERE id = $1", id)
+	return err
+}

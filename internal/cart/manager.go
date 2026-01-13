@@ -94,3 +94,38 @@ func Remove(w http.ResponseWriter, r *http.Request, variantID int) {
 
 	saveCart(w, newItems)
 }
+
+// UpdateQuantity changes the quantity of a specific item
+func UpdateQuantity(w http.ResponseWriter, r *http.Request, variantID int, change int) {
+	items := Get(r)
+
+	for i, item := range items {
+		if item.VariantID == variantID {
+			newQty := item.Quantity + change
+
+			// Ensure quantity doesn't go below 1
+			if newQty < 1 {
+				newQty = 1
+			}
+
+			items[i].Quantity = newQty
+			break
+		}
+	}
+
+	saveCart(w, items)
+}
+
+// RemoveItem completely deletes an item (You might already have something like this)
+func RemoveItem(w http.ResponseWriter, r *http.Request, variantID int) {
+	items := Get(r)
+	var newItems []Item
+
+	for _, item := range items {
+		if item.VariantID != variantID {
+			newItems = append(newItems, item)
+		}
+	}
+
+	saveCart(w, newItems)
+}

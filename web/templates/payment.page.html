@@ -13,9 +13,9 @@
                 </div>
             </div>
 
-            <h2 class="mb-3">Check your Phone!</h2>
+            <h2 class="mb-3" id="status-text">Check your Phone!</h2>
             <p class="lead text-muted">
-                We have sent an M-PESA payment request to <strong>+{{.Phone}}</strong> for <strong>KES {{.Amount}}</strong>.
+                We have sent an M-PESA payment request to <strong>+{{.Order.CustomerPhone}}</strong> for <strong>KES {{.Order.TotalAmount}}</strong>.
             </p>
 
             <div class="alert alert-info mt-4 text-start">
@@ -30,9 +30,46 @@
             <hr>
             
             <p>Did the prompt fail to appear?</p>
-            <a href="/payment?order_id={{.OrderID}}" class="btn btn-outline-primary btn-sm">Retry Request</a>
+            <a href="/payment?order_id={{.Order.ID}}" class="btn btn-outline-primary btn-sm">Retry Request</a>
             <a href="/" class="btn btn-link btn-sm text-decoration-none">Return Home</a>
         </div>
     </div>
 </div>
+
+<!-- JavaScript to Auto-Check Payment Status -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Get the Order ID from the Go Template
+        const orderID = {{.Order.ID}};
+        const statusText = document.getElementById("status-text");
+        
+        function checkStatus() {
+            // Call the Go API endpoint we created
+            fetch(`/api/order/status?id=${orderID}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Payment Status:", data.status);
+                    
+                    if (data.status === "PAID") {
+                        // 1. Stop checking
+                        clearInterval(polling);
+                        
+                        // 2. Update UI to show success
+                        statusText.innerText = "Payment Successful! 🎉";
+                        statusText.classList.add("text-success");
+                        
+                        // 3. Redirect after 1 second
+                        setTimeout(() => {
+                            // Redirect to the Order View page (or any thank you page)
+                            window.location.href = `/admin/orders/view?id=${orderID}`;
+                        }, 1000);
+                    }
+                })
+                .catch(err => console.error("Error checking status:", err));
+        }
+
+        // Run the checkStatus function every 3000 milliseconds (3 seconds)
+        const polling = setInterval(checkStatus, 3000);
+    });
+</script>
 {{end}}

@@ -33,7 +33,7 @@ func NewService(key, secret string) *Service {
 			ConsumerSecret: secret,
 			BusinessCode:   "174379",                                                           // Default Sandbox Paybill
 			Passkey:        "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919", // Default Sandbox Passkey
-			CallbackURL:    "https://mydomain.com/api/callback",                                // Needs a real URL for callbacks to work
+			CallbackURL:    "https://e3d42c404fab.ngrok-free.app/api/callback",                 // Needs a real URL for callbacks to work
 		},
 		Client: &http.Client{Timeout: 30 * time.Second},
 	}

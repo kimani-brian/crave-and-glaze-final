@@ -1,45 +1,128 @@
 {{template "base" .}}
 
-{{define "title"}}Fresh Cakes{{end}}
+{{define "title"}}Home{{end}}
 
 {{define "content"}}
-<!-- Hero Section -->
-<section class="hero-section text-center py-5">
-    <div class="container">
-        <span class="badge bg-warning text-dark mb-2">Welcome to Crave & Glaze</span>
-        <h1 class="display-4 fw-bold hero-title">Fresh & <span class="text-highlight">Delicious</span> Cakes</h1>
-        <p class="lead text-muted">Indulge in our handcrafted cakes, made fresh daily.</p>
-        <a href="/cakes" class="btn btn-primary btn-lg mt-3">Explore Our Cakes &rarr;</a>
-    </div>
-</section>
+<!-- 1. HERO SECTION (Gradient Background) -->
+<section class="hero-section position-relative overflow-hidden">
+    <div class="container py-5">
+        <div class="row align-items-center min-vh-75">
+            
+            <!-- Left Side: Text Content -->
+            <div class="col-lg-6 mb-5 mb-lg-0 z-index-2">
+                <span class="badge bg-white text-danger shadow-sm px-3 py-2 rounded-pill mb-3">
+                    🎂 Welcome to Crave & Glaze
+                </span>
+                <h1 class="display-3 fw-bold mb-3" style="color: #2c2c2c;">
+                    Fresh & <span style="color: #ff5e62;">Delicious</span> <br>
+                    <span style="color: #ff9966;">Cakes</span> Made with Love
+                </h1>
+                <p class="lead text-muted mb-4" style="max-width: 500px;">
+                    Indulge in our handcrafted cakes and pastries, made fresh daily 
+                    with the finest ingredients. <span style="color: #e65100;">Your taste buds will thank you!</span>
+                </p>
+                <a href="/cakes" class="btn btn-danger btn-lg rounded-pill px-5 py-3 shadow-sm hover-lift">
+                    Explore Our Cakes &rarr;
+                </a>
+            </div>
 
-<!-- Featured Products Grid -->
-<div class="container py-5">
-    <h3 class="text-center mb-4">Customer Favorites</h3>
-    <div class="row row-cols-1 row-cols-md-3 g-4">
-        
-        <!-- Loop through products (We will send this data from Go later) -->
-        {{range .Products}}
-        <div class="col">
-            <div class="card h-100 shadow-sm border-0 cake-card">
-                <!-- Placeholder image for now -->
-                <img src="/static/img/cake-placeholder.jpg" class="card-img-top" alt="{{.Name}}" style="height: 250px; object-fit: cover;">
-                <div class="card-body">
-                    <h5 class="card-title">{{.Name}}</h5>
-                    <p class="card-text text-muted small">{{.Description}}</p>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="fw-bold text-primary">From KES {{.StartingPrice}}</span>
-                        <a href="/product?id={{.ID}}" class="btn btn-outline-danger btn-sm">View Options</a>
+            <!-- Right Side: Image Collage -->
+            <div class="col-lg-6 position-relative">
+                <div class="collage-wrapper d-none d-lg-block"> <!-- Hidden on mobile to save space -->
+                    <!-- 1. Large Back Image (The Party/Group) -->
+                    <div class="photo-card card-main">
+                        <img src="/static/img/hero-kids.jpg" alt="Party">
+                    </div>
+                    
+                    <!-- 2. Medium Front Image (The Chocolate Cake) -->
+                    <div class="photo-card card-secondary">
+                        <img src="/static/img/hero-choco.jpg" alt="Chocolate">
+                    </div>
+
+                    <!-- 3. Small Accent Image (The Fruit Cake) -->
+                    <div class="photo-card card-accent">
+                        <img src="/static/img/hero-fruit.jpg" alt="Fruit">
                     </div>
                 </div>
             </div>
         </div>
-        {{else}}
-            <div class="col-12 text-center">
-                <p>No cakes available at the moment. Check back soon!</p>
-            </div>
-        {{end}}
+    </div>
+</section>
 
+<!-- 2. FEATURES SECTION (Icons) -->
+<section class="py-5 bg-white border-bottom">
+    <div class="container">
+        <div class="row g-4">
+            <!-- Feature 1 -->
+            <div class="col-md-4">
+                <div class="d-flex align-items-start p-3 border rounded-3 h-100 shadow-sm feature-box">
+                    <div class="icon-wrapper me-3 text-danger">
+                        <svg width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h9A1.5 1.5 0 0 1 12 3.5V5h1.02a1.5 1.5 0 0 1 1.17.563l1.481 1.85a1.5 1.5 0 0 1 .329.938V10.5a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 1 1-4 0H5a2 2 0 1 1-4 0V3.5zm2.5 7.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm9 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-1">Cake delivered to your door</h5>
+                        <p class="text-muted small mb-0">Order early for same-day delivery or select a later date.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature 2 -->
+            <div class="col-md-4">
+                <div class="d-flex align-items-start p-3 border rounded-3 h-100 shadow-sm feature-box">
+                    <div class="icon-wrapper me-3 text-danger">
+                        <svg width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
+                           <path d="M12.9 2h-11A1.9 1.9 0 0 0 0 3.9v8.2A1.9 1.9 0 0 0 1.9 14h11a1.9 1.9 0 0 0 1.9-1.9V3.9A1.9 1.9 0 0 0 12.9 2zM1.9 3a.9.9 0 0 1 .9-.9h10a.9.9 0 0 1 .9.9v8.2a.9.9 0 0 1-.9.9h-10a.9.9 0 0 1-.9-.9V3z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-1">Fresh from the oven</h5>
+                        <p class="text-muted small mb-0">Freshly baked, delivered moist and tasty every single time.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature 3 -->
+            <div class="col-md-4">
+                <div class="d-flex align-items-start p-3 border rounded-3 h-100 shadow-sm feature-box">
+                    <div class="icon-wrapper me-3 text-danger">
+                        <svg width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M2 6a6 6 0 1 1 10.174 4.31c-.203.196-.359.4-.453.619l-.762 1.769A.5.5 0 0 1 10.5 13a.5.5 0 0 1 0 1 .5.5 0 0 1 0 1l-.224.447a1 1 0 0 1-.894.553H6.618a1 1 0 0 1-.894-.553L5.5 15a.5.5 0 0 1 0-1 .5.5 0 0 1 0-1 .5.5 0 0 1-.46-.302l-.761-1.77a1.964 1.964 0 0 0-.453-.618A5.984 5.984 0 0 1 2 6z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-1">You envision it, we bake it.</h5>
+                        <p class="text-muted small mb-0">Get custom designs. Bring your wildest cake ideas to life.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 3. PRODUCTS GRID -->
+<div class="container py-5">
+    <div class="text-center mb-5">
+        
+        <h2 class="fw-bold">Our Best Sellers</h2>
+    </div>
+    
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {{range .Products}}
+        <div class="col">
+            <div class="card h-100 shadow-sm border-0 cake-card">
+                <div style="height: 250px; overflow: hidden;">
+                    <img src="{{.ImageURL}}" class="card-img-top w-100 h-100" style="object-fit: cover;" alt="{{.Name}}">
+                </div>
+                <div class="card-body text-center">
+                    <h5 class="card-title fw-bold">{{.Name}}</h5>
+                    <p class="text-muted mb-2">Starting from KES {{.StartingPrice}}</p>
+                    <a href="/product?id={{.ID}}" class="btn btn-outline-danger btn-sm rounded-pill">View Details</a>
+                </div>
+            </div>
+        </div>
+        {{end}}
     </div>
 </div>
 {{end}}

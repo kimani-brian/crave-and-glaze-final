@@ -60,3 +60,28 @@ type Category struct {
 	Name string
 	Slug string
 }
+
+// --- MPESA Callback Structures ---
+
+type MpesaCallbackResponse struct {
+	Body struct {
+		StkCallback StkCallback `json:"stkCallback"`
+	} `json:"Body"`
+}
+
+type StkCallback struct {
+	MerchantRequestID string           `json:"MerchantRequestID"`
+	CheckoutRequestID string           `json:"CheckoutRequestID"`
+	ResultCode        int              `json:"ResultCode"`
+	ResultDesc        string           `json:"ResultDesc"`
+	CallbackMetadata  CallbackMetadata `json:"CallbackMetadata"`
+}
+
+type CallbackMetadata struct {
+	Item []CallbackItem `json:"Item"`
+}
+
+type CallbackItem struct {
+	Name  string      `json:"Name"`
+	Value interface{} `json:"Value"` // interface{} because Value can be string or float
+}

@@ -9,7 +9,8 @@
         <div class="col-md-6 mb-4">
             <div class="card border-0 shadow-sm">
                 <!-- Using the dummy image for now if URL is empty or local -->
-                <img src="/static/img/cake-placeholder.jpg" class="card-img-top rounded" alt="{{.Product.Name}}">
+                <img src="{{.Product.ImageURL}}" class="card-img-top rounded" alt="{{.Product.Name}}" 
+             onerror="this.src='/static/img/cake-placeholder.jpg'">
             </div>
         </div>
 

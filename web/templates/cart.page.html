@@ -12,15 +12,15 @@
             {{if .Data.Items}}
                 <div class="card shadow-sm border-0">
                     <div class="card-body p-0">
-                        <table class="table table-hover mb-0">
+                        <table class="table table-hover mb-0 align-middle">
                             <!-- Table Header -->
                             <thead class="bg-light">
                                 <tr>
                                     <th>Product</th>
                                     <th>Details</th>
                                     <th>Price</th>
-                                    <th>Qty</th>
-                                    <th>Action</th> <!-- Header for the remove button -->
+                                    <th style="width: 140px;">Qty</th> <!-- Added width for buttons -->
+                                    <th class="text-end">Action</th>
                                 </tr>
                             </thead>
                             
@@ -38,7 +38,28 @@
                                         {{end}}
                                     </td>
                                     <td>{{.Price}}</td>
-                                    <td>{{.Quantity}}</td>
+                                    
+                                    <!-- NEW: Interactive Quantity Column -->
+                                    <td>
+                                        <form action="/cart/update" method="POST">
+                                            <input type="hidden" name="variant_id" value="{{.VariantID}}">
+                                            
+                                            <div class="input-group input-group-sm">
+                                                <!-- Decrease Button -->
+                                                <button type="submit" name="action" value="decrease" class="btn btn-outline-secondary">
+                                                    &minus;
+                                                </button>
+                                                
+                                                <!-- Read-only Number -->
+                                                <input type="text" class="form-control text-center" value="{{.Quantity}}" readonly>
+                                                
+                                                <!-- Increase Button -->
+                                                <button type="submit" name="action" value="increase" class="btn btn-outline-secondary">
+                                                    &plus;
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </td>
                                     
                                     <!-- Remove Button Column -->
                                     <td class="text-end">
