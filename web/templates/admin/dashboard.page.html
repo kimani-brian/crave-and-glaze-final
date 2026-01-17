@@ -1,6 +1,35 @@
 {{template "admin_base" .}}
 
 {{define "content"}}
+
+<!-- NEW: Quick Action Buttons -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card shadow-sm border-0 bg-light">
+            <div class="card-body">
+                <h5 class="card-title mb-3 text-muted">Management Tools</h5>
+                <div class="d-flex flex-wrap gap-2">
+                    <!-- 1. Add New Cake -->
+                    <a href="/admin/products/add" class="btn btn-success">
+                        <strong>+</strong> Add New Cake
+                    </a>
+
+                    <!-- 3. Manage All Products (List/Edit/Delete) -->
+                    <a href="/admin/products" class="btn btn-primary">
+                        View & Edit Products
+                    </a>
+
+                    <!-- 2. Manage Categories -->
+                    <a href="/admin/categories" class="btn btn-secondary">
+                        Manage Categories
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- End Quick Actions -->
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>Recent Orders</h2>
     <span class="badge bg-secondary">{{len .Orders}} Total Orders</span>
@@ -24,7 +53,7 @@
                 {{range .Orders}}
                 <tr>
                     <td>#{{.ID}}</td>
-                    <td>{{.CustomerName}}</td>
+                    <td>{{.FirstName}} {{.LastName}}</td>
                     <td>{{.CustomerPhone}}</td>
                     <td class="fw-bold">KES {{.TotalAmount}}</td>
                     <td>
@@ -36,9 +65,12 @@
                             <span class="badge bg-secondary">{{.Status}}</span>
                         {{end}}
                     </td>
-                    <td><a href="/admin/orders/view?id={{.ID}}" class="btn btn-sm btn-primary">View Details</a></td> ->
                     <td>
-                        <!-- Action Forms -->
+                        <a href="/admin/orders/view?id={{.ID}}" class="btn btn-sm btn-primary">
+                            View Details
+                        </a>
+                    </td>
+                    <td>
                         {{if eq .Status "PENDING"}}
                         <form action="/admin/order/status" method="POST" class="d-inline">
                             <input type="hidden" name="order_id" value="{{.ID}}">

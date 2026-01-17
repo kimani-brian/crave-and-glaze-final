@@ -7,27 +7,29 @@
     <h1 class="mb-4 brand-font">Shopping Cart</h1>
 
     <div class="row">
-        <!-- Cart Items List -->
         <div class="col-md-8">
-            {{if .Data.Items}}
+            {{if .Items}}
                 <div class="card shadow-sm border-0">
                     <div class="card-body p-0">
                         <table class="table table-hover mb-0 align-middle">
-                            <!-- Table Header -->
                             <thead class="bg-light">
                                 <tr>
+                                    <!-- Added Image Column Header -->
+                                    <th style="width: 100px;">Image</th>
                                     <th>Product</th>
                                     <th>Details</th>
                                     <th>Price</th>
-                                    <th style="width: 140px;">Qty</th> <!-- Added width for buttons -->
+                                    <th style="width: 140px;">Qty</th>
                                     <th class="text-end">Action</th>
                                 </tr>
                             </thead>
-                            
-                            <!-- Table Body (Loop) -->
                             <tbody>
-                                {{range .Data.Items}} 
+                                {{range .Items}} 
                                 <tr>
+                                    <!-- Added Image Column Body -->
+                                    <td>
+                                        <img src="{{.ImageURL}}" alt="{{.ProductName}}" class="img-fluid rounded" style="width: 80px; height: 80px; object-fit: cover;">
+                                    </td>
                                     <td>
                                         <span class="fw-bold">{{.ProductName}}</span>
                                     </td>
@@ -38,36 +40,20 @@
                                         {{end}}
                                     </td>
                                     <td>{{.Price}}</td>
-                                    
-                                    <!-- NEW: Interactive Quantity Column -->
                                     <td>
                                         <form action="/cart/update" method="POST">
                                             <input type="hidden" name="variant_id" value="{{.VariantID}}">
-                                            
                                             <div class="input-group input-group-sm">
-                                                <!-- Decrease Button -->
-                                                <button type="submit" name="action" value="decrease" class="btn btn-outline-secondary">
-                                                    &minus;
-                                                </button>
-                                                
-                                                <!-- Read-only Number -->
+                                                <button type="submit" name="action" value="decrease" class="btn btn-outline-secondary">&minus;</button>
                                                 <input type="text" class="form-control text-center" value="{{.Quantity}}" readonly>
-                                                
-                                                <!-- Increase Button -->
-                                                <button type="submit" name="action" value="increase" class="btn btn-outline-secondary">
-                                                    &plus;
-                                                </button>
+                                                <button type="submit" name="action" value="increase" class="btn btn-outline-secondary">&plus;</button>
                                             </div>
                                         </form>
                                     </td>
-                                    
-                                    <!-- Remove Button Column -->
                                     <td class="text-end">
                                         <form action="/cart/remove" method="POST">
                                             <input type="hidden" name="variant_id" value="{{.VariantID}}">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove Item">
-                                                &times; Remove
-                                            </button>
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove Item">&times; Remove</button>
                                         </form>
                                     </td>
                                 </tr>
@@ -83,7 +69,6 @@
             {{end}}
         </div>
 
-        <!-- Checkout Summary -->
         <div class="col-md-4">
             <div class="card shadow-sm border-0 bg-light">
                 <div class="card-body">
@@ -91,7 +76,7 @@
                     <hr>
                     <div class="d-flex justify-content-between mb-3">
                         <span>Subtotal</span>
-                        <span class="fw-bold">KES {{.Data.Total}}</span>
+                        <span class="fw-bold">KES {{.Total}}</span>
                     </div>
                     <div class="d-flex justify-content-between mb-3 text-muted">
                         <span>Delivery</span>
@@ -100,13 +85,10 @@
                     <hr>
                     <div class="d-flex justify-content-between mb-4">
                         <span class="h5">Total</span>
-                        <span class="h5 text-primary">KES {{.Data.Total}}</span>
+                        <span class="h5 text-primary">KES {{.Total}}</span>
                     </div>
-
-                    {{if .Data.Items}}
-                    <a href="/checkout" class="btn btn-success w-100 btn-lg">
-                        Proceed to Checkout &rarr;
-                    </a>
+                    {{if .Items}}
+                    <a href="/checkout" class="btn btn-success w-100 btn-lg">Proceed to Checkout &rarr;</a>
                     {{end}}
                 </div>
             </div>

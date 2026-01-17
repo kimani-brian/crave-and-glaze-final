@@ -10,7 +10,8 @@ import (
 // Item represents one line in the shopping cart
 type Item struct {
 	VariantID   int
-	ProductName string // We store name here to save DB lookups on simple views
+	ProductName string
+	ImageURL    string // We store name here to save DB lookups on simple views
 	Price       float64
 	Quantity    int
 	Message     string

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee;">
+        <h2 style="color: #E85D75;">Thank you for your order!</h2>
+        <p>Hi {{.CustomerName}},</p>
+        <p>We have received your order <strong>#{{.ID}}</strong> and it is now being processed.</p>
+        
+        <h3>Order Summary</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr style="background-color: #f8f8f8;">
+                <th style="padding: 10px; text-align: left;">Item</th>
+                <th style="padding: 10px; text-align: right;">Price</th>
+            </tr>
+            {{range .Items}}
+            <tr>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                    {{.ProductName}} ({{.WeightLabel}})<br>
+                    <small>Qty: {{.Quantity}} | Icing: {{.Icing}}</small>
+                </td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">
+                    {{.Price}}
+                </td>
+            </tr>
+            {{end}}
+            <tr>
+                <td style="padding: 10px; font-weight: bold;">Total</td>
+                <td style="padding: 10px; font-weight: bold; text-align: right;">KES {{.TotalAmount}}</td>
+            </tr>
+        </table>
+
+        <p style="margin-top: 20px;">
+            Please check your phone for the MPESA prompt if you haven't paid yet.
+        </p>
+        <p>Best regards,<br>Crave & Glaze Team</p>
+    </div>
+</body>
+</html>

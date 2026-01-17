@@ -18,6 +18,7 @@ import (
 	"crave-and-glaze/internal/cart"
 	"crave-and-glaze/internal/daraja"
 	"crave-and-glaze/internal/database"
+	"crave-and-glaze/internal/mailer"
 	"crave-and-glaze/internal/models"
 	"crave-and-glaze/internal/repository"
 	"strconv"
@@ -28,6 +29,8 @@ type Application struct {
 	Products *repository.ProductModel
 	Orders   *repository.OrderModel
 	Mpesa    *daraja.Service
+	Users    *repository.UserModel
+	Mailer   *mailer.Mailer
 }
 
 func main() {
@@ -43,12 +46,21 @@ func main() {
 		os.Getenv("MPESA_KEY"),
 		os.Getenv("MPESA_SECRET"),
 	)
+	mailService := mailer.New(
+		os.Getenv("SMTP_HOST"),
+		os.Getenv("SMTP_PORT"),
+		os.Getenv("SMTP_EMAIL"),
+		os.Getenv("SMTP_PASSWORD"),
+	)
+
 	mpesaService.Config.CallbackURL = "https://e3d42c404fab.ngrok-free.app/api/callback/mpesa"
 	// 2. Initialize Models/Repositories
 	app := &Application{
 		Products: &repository.ProductModel{DB: database.DB},
 		Orders:   &repository.OrderModel{DB: database.DB},
 		Mpesa:    mpesaService,
+		Users:    &repository.UserModel{DB: database.DB},
+		Mailer:   mailService,
 	}
 
 	// 3. Setup Router
@@ -64,56 +76,63 @@ func main() {
 
 	fileServer := http.FileServer(filesDir)
 	mux.Handle("/static/", http.StripPrefix("/static/", fileServer))
-	// Pass 'app' methods to handlers
-	mux.HandleFunc("/", app.homeHandler)
 
+	// ==========================================
+	// PUBLIC ROUTES (No Login Required)
+	// ==========================================
+	mux.HandleFunc("/", app.homeHandler)
+	mux.HandleFunc("/cakes", app.allCakesHandler)
+	mux.HandleFunc("/category", app.categoryHandler)
 	mux.HandleFunc("/product", app.productHandler)
 
+	// Cart Functions
 	mux.HandleFunc("POST /cart/add", app.addToCartHandler)
 	mux.HandleFunc("GET /cart", app.viewCartHandler)
-
-	mux.HandleFunc("GET /checkout", app.checkoutPageHandler)
-	mux.HandleFunc("POST /checkout", app.placeOrderHandler)
-	//paymentHandler
-	mux.HandleFunc("GET /payment", app.paymentHandler)
-
-	// Admin Routes
-	mux.HandleFunc("GET /admin/dashboard", app.adminDashboardHandler)
-	mux.HandleFunc("POST /admin/order/status", app.adminUpdateStatusHandler)
-
-	mux.HandleFunc("GET /admin/products/add", app.adminAddProductPageHandler)
-	mux.HandleFunc("POST /admin/products/add", app.adminAddProductHandler)
-
-	mux.HandleFunc("GET /category", app.categoryHandler)
-
-	// Admin Category Routes
-	mux.HandleFunc("GET /admin/categories", app.adminCategoriesHandler)
-	mux.HandleFunc("POST /admin/categories/add", app.adminAddCategoryHandler)
-	mux.HandleFunc("POST /admin/categories/delete", app.adminDeleteCategoryHandler)
-
-	mux.HandleFunc("GET /cakes", app.allCakesHandler)
-	mux.HandleFunc("GET /admin/orders/view", app.adminOrderViewHandler)
-
-	//cart remove
 	mux.HandleFunc("POST /cart/remove", app.removeFromCartHandler)
-
 	mux.HandleFunc("POST /cart/update", app.updateCartHandler)
 
-	// Admin Product Management
-	mux.HandleFunc("GET /admin/products", app.adminProductsListHandler)
-	mux.HandleFunc("POST /admin/products/delete", app.adminDeleteProductHandler)
-	mux.HandleFunc("GET /admin/products/edit", app.adminEditProductPageHandler)
-	mux.HandleFunc("POST /admin/products/edit", app.adminEditProductHandler)
+	// Checkout & Payment
+	mux.HandleFunc("GET /checkout", app.checkoutPageHandler)
+	mux.HandleFunc("POST /checkout", app.placeOrderHandler)
+	mux.HandleFunc("GET /payment", app.paymentHandler)
 
-	// MPESA Callback
-	mux.HandleFunc("POST /api/callback", app.mpesaCallbackHandler)
-	// Status check for the frontend
-	//mux.HandleFunc("GET /api/order/status", app.orderStatusHandler)
-	// API Route for the frontend polling payment confirm
-	// API Route for the frontend polling
-	mux.HandleFunc("GET /api/order/status", app.apiCheckStatusHandler)
-	// Routes
+	// Authentication (Must be public so you can log in)
+	mux.HandleFunc("GET /admin/login", app.loginPageHandler)
+	mux.HandleFunc("POST /admin/login", app.loginPostHandler)
+	// Logout is technically public, but usually requires a session to exist.
+	// We can leave it unwrapped or wrapped, unwrapped is safer to prevent getting stuck.
+	mux.HandleFunc("POST /admin/logout", app.logoutHandler)
+
+	// ==========================================
+	// API ROUTES (MPESA & AJAX)
+	// ==========================================
+	// These must be public for Safaricom to reach them
 	mux.HandleFunc("POST /api/callback/mpesa", app.mpesaCallbackHandler)
+	// Used by the frontend JavaScript to check if payment is complete
+	mux.HandleFunc("GET /api/order/status", app.apiCheckStatusHandler)
+
+	// ==========================================
+	// ADMIN ROUTES (Protected by Middleware)
+	// ==========================================
+	// All routes below require the user to be logged in
+
+	// Dashboard & Orders
+	mux.HandleFunc("GET /admin/dashboard", app.requireAdmin(app.adminDashboardHandler))
+	mux.HandleFunc("POST /admin/order/status", app.requireAdmin(app.adminUpdateStatusHandler))
+	mux.HandleFunc("GET /admin/orders/view", app.requireAdmin(app.adminOrderViewHandler))
+
+	// Category Management
+	mux.HandleFunc("GET /admin/categories", app.requireAdmin(app.adminCategoriesHandler))
+	mux.HandleFunc("POST /admin/categories/add", app.requireAdmin(app.adminAddCategoryHandler))
+	mux.HandleFunc("POST /admin/categories/delete", app.requireAdmin(app.adminDeleteCategoryHandler))
+
+	// Product Management
+	mux.HandleFunc("GET /admin/products", app.requireAdmin(app.adminProductsListHandler))
+	mux.HandleFunc("GET /admin/products/add", app.requireAdmin(app.adminAddProductPageHandler))
+	mux.HandleFunc("POST /admin/products/add", app.requireAdmin(app.adminAddProductHandler))
+	mux.HandleFunc("GET /admin/products/edit", app.requireAdmin(app.adminEditProductPageHandler))
+	mux.HandleFunc("POST /admin/products/edit", app.requireAdmin(app.adminEditProductHandler))
+	mux.HandleFunc("POST /admin/products/delete", app.requireAdmin(app.adminDeleteProductHandler))
 	// 4. Start Server
 	srv := &http.Server{
 		Addr:         ":8080",
@@ -220,6 +239,7 @@ func (app *Application) addToCartHandler(w http.ResponseWriter, r *http.Request)
 	item := cart.Item{
 		VariantID:   variantID,
 		ProductName: product.Name + " (" + sizeLabel + ")",
+		ImageURL:    product.ImageURL,
 		Price:       selectedPrice,
 		Quantity:    quantity,
 		Message:     msg,
@@ -238,49 +258,37 @@ func (app *Application) viewCartHandler(w http.ResponseWriter, r *http.Request) 
 	items := cart.Get(r)
 	total := cart.Total(items)
 
-	// 2. Prepare the data wrapper
-	// We create a temporary struct to hold both items and total
-	cartData := struct {
-		Items []cart.Item
-		Total float64
-	}{
+	// 2. Create the Template Data
+	// We assign directly to Items and Total, just like in the Checkout handler
+	data := &models.TemplateData{
+		Title: "Your Cart",
 		Items: items,
 		Total: total,
 	}
 
-	// 3. Create the Template Data
-	data := &models.TemplateData{
-		Title: "Your Cart",
-		Data:  cartData, // Pass the cart info into the generic 'Data' field
-	}
-
-	// 4. Render using the helper
+	// 3. Render using the helper
 	app.render(w, r, "cart.page.html", data)
 }
 
 func (app *Application) checkoutPageHandler(w http.ResponseWriter, r *http.Request) {
+	// 1. Get Cart Items
 	items := cart.Get(r)
 	if len(items) == 0 {
 		http.Redirect(w, r, "/cakes", http.StatusSeeOther)
 		return
 	}
 
+	// 2. Calculate Total
 	total := cart.Total(items)
 
-	// Prepare data just like the cart
-	checkoutData := struct {
-		Items []cart.Item
-		Total float64
-	}{
-		Items: items,
-		Total: total,
-	}
-
+	// 3. Prepare Data using the master TemplateData struct
 	data := &models.TemplateData{
 		Title: "Checkout",
-		Data:  checkoutData,
+		Items: items, // <--- Pass items here
+		Total: total, // <--- Pass total here
 	}
 
+	// 4. Render using the helper (Fixes Navbar & Layout)
 	app.render(w, r, "checkout.page.html", data)
 }
 
@@ -291,29 +299,40 @@ func (app *Application) placeOrderHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// 1. Get Customer Info
-	name := r.FormValue("name")
-	phone := r.FormValue("phone")
+	// 1. Get Customer Info from Form
+	firstName := r.FormValue("first_name")
+	lastName := r.FormValue("last_name")
+	email := r.FormValue("email")
+	whatsapp := r.FormValue("whatsapp")
+	mpesaPhone := r.FormValue("mpesa_phone")
 
 	// Basic Validation
-	if name == "" || phone == "" {
+	if firstName == "" || mpesaPhone == "" {
 		http.Error(w, "Name and Phone are required", 400)
 		return
 	}
 
-	// 2. Get Cart Data
+	// 2. Get Cart Data & Calculate Total
 	cartItems := cart.Get(r)
 	if len(cartItems) == 0 {
 		http.Redirect(w, r, "/cakes", http.StatusSeeOther)
 		return
 	}
+
 	total := cart.Total(cartItems)
 
 	// 3. Prepare Order Model
+	// Note: Ensure your internal/models.Order struct has these new fields (FirstName, etc.)
+	// or map them to the existing CustomerName field if you haven't updated the struct yet.
 	order := &models.Order{
-		CustomerName:  name,
-		CustomerPhone: phone,
-		TotalAmount:   total,
+		FirstName:      firstName,
+		LastName:       lastName,
+		Email:          email,
+		WhatsappNumber: whatsapp,
+		CustomerPhone:  mpesaPhone,
+		TotalAmount:    total,
+		// If you kept 'CustomerName' in the DB model, combine them:
+		// CustomerName: firstName + " " + lastName,
 	}
 
 	// 4. Convert Cart Items to Order Items
@@ -336,7 +355,53 @@ func (app *Application) placeOrderHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// 6. Clear the Cart (Expire the cookie)
+	// ============================================================
+	// 📧 NEW: SEND EMAILS (ASYNC)
+	// ============================================================
+	go func() {
+		// A. Fetch nice readable details (like Cake Name) for the email
+		// instead of just sending IDs.
+		niceItems, err := app.Orders.GetOrderItems(orderID)
+		if err != nil {
+			log.Println("Email Error: Could not fetch order items:", err)
+			return
+		}
+
+		// B. Prepare Data for Email Template
+		emailData := struct {
+			ID            int
+			CustomerName  string
+			CustomerPhone string
+			TotalAmount   float64
+			Items         []repository.OrderDetailItem
+		}{
+			ID:            orderID,
+			CustomerName:  firstName + " " + lastName,
+			CustomerPhone: mpesaPhone,
+			TotalAmount:   total,
+			Items:         niceItems,
+		}
+
+		// C. Send to Customer (if they provided email)
+		if email != "" {
+			err := app.Mailer.Send(email, "Order Confirmation - Crave & Glaze", "customer_receipt.html", emailData)
+			if err != nil {
+				log.Println("Failed to send customer email:", err)
+			}
+		}
+
+		// D. Send to Admin
+		adminEmail := os.Getenv("ADMIN_EMAIL")
+		if adminEmail != "" {
+			err := app.Mailer.Send(adminEmail, "🔔 New Order Alert!", "admin_alert.html", emailData)
+			if err != nil {
+				log.Println("Failed to send admin email:", err)
+			}
+		}
+	}()
+	// ============================================================
+
+	// 6. Clear the Cart
 	http.SetCookie(w, &http.Cookie{
 		Name:   "crave_cart",
 		Value:  "",
@@ -344,8 +409,7 @@ func (app *Application) placeOrderHandler(w http.ResponseWriter, r *http.Request
 		MaxAge: -1,
 	})
 
-	// 7. Redirect to Payment Page (Passing the Order ID)
-	// We use Sprintf to put the ID in the URL
+	// 7. Redirect to Payment (STK Push Page)
 	redirectURL := fmt.Sprintf("/payment?order_id=%d", orderID)
 	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 }
@@ -923,4 +987,57 @@ func (app *Application) mpesaCallbackHandler(w http.ResponseWriter, r *http.Requ
 	// 5. Respond to Safaricom (They expect a 200 OK)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(`{"ResultCode":0,"ResultDesc":"Accepted"}`))
+}
+
+func (app *Application) loginPageHandler(w http.ResponseWriter, r *http.Request) {
+	app.render(w, r, "admin/login.page.html", &models.TemplateData{Title: "Admin Login"})
+}
+
+func (app *Application) loginPostHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+
+	id, err := app.Users.Authenticate(username, password)
+	if err != nil {
+		http.Redirect(w, r, "/admin/login?error=true", http.StatusSeeOther)
+		return
+	}
+
+	// Login Success: Set a session cookie
+	// In a real production app, use a secure session library like 'alexedwards/scs'
+	// For this tutorial, we will use a simple cookie.
+	http.SetCookie(w, &http.Cookie{
+		Name:     "admin_session",
+		Value:    fmt.Sprintf("%d", id), // Storing ID directly is not super secure but works for Phase 1
+		Path:     "/",
+		HttpOnly: true, // JavaScript cannot read this
+	})
+
+	http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
+}
+
+func (app *Application) logoutHandler(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:   "admin_session",
+		Value:  "",
+		Path:   "/",
+		MaxAge: -1, // Expire immediately
+	})
+	http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
+}
+
+// requireAdmin checks if the user is logged in
+func (app *Application) requireAdmin(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Check for cookie
+		_, err := r.Cookie("admin_session")
+		if err != nil {
+			// No cookie? Kick them to login page
+			http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
+			return
+		}
+		// Cookie exists? Let them pass
+		next(w, r)
+	}
 }

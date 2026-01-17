@@ -6,63 +6,86 @@
 <div class="container py-5">
     <div class="row">
         
-        <!-- Order Summary (Left Side) -->
+        <!-- Cart Summary (Right Side on desktop) -->
         <div class="col-md-5 order-md-2 mb-4">
             <h4 class="d-flex justify-content-between align-items-center mb-3">
                 <span class="text-primary">Your Cart</span>
-                <span class="badge bg-primary rounded-pill">{{len .Data.Items}} items</span>
+                <span class="badge bg-primary rounded-pill">{{len .Items}} items</span>
             </h4>
             <ul class="list-group mb-3 shadow-sm">
-                {{range .Data.Items}} <!-- UPDATED -->
+                {{range .Items}}
                 <li class="list-group-item d-flex justify-content-between lh-sm">
-                    <div>
-                        <h6 class="my-0">{{.ProductName}}</h6>
-                        <small class="text-muted">Qty: {{.Quantity}}</small>
+                    <div class="d-flex align-items-center">
+                        <!-- Added Thumbnail Image -->
+                        <!-- Note: Ensure your cart.Item struct has .ImageURL populated -->
+                        <img src="{{.ImageURL}}" alt="cake" class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                        <div>
+                            <h6 class="my-0">{{.ProductName}}</h6>
+                            <small class="text-muted">Qty: {{.Quantity}}</small>
+                        </div>
                     </div>
                     <span class="text-muted">KES {{.Price}}</span>
                 </li>
                 {{end}}
                 <li class="list-group-item d-flex justify-content-between bg-light">
                     <span class="fw-bold">Total (KES)</span>
-                    <strong class="text-success">{{.Data.Total}}</strong> <!-- UPDATED -->
+                    <strong class="text-success">{{.Total}}</strong>
                 </li>
             </ul>
         </div>
 
-        <!-- Billing Details (Right Side) -->
+        <!-- Checkout Form (Left Side) -->
         <div class="col-md-7 order-md-1">
-            <h2 class="mb-3 brand-font">Checkout Details</h2>
-            <div class="card p-4 shadow-sm border-0">
-                <form action="/checkout" method="POST">
+            <h2 class="mb-3 brand-font text-danger">Checkout Details</h2>
+            
+            <form action="/checkout" method="POST" class="needs-validation">
+                <div class="card p-4 shadow-sm border-0 mb-4">
+                    <h5 class="mb-3">Contact Information</h5>
                     <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label for="firstName" class="form-label">First Name</label>
+                            <input type="text" class="form-control" name="first_name" id="firstName" required>
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="lastName" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" name="last_name" id="lastName" required>
+                        </div>
+                        
+                        <!-- Updated Email Field (Made Required for Receipts) -->
                         <div class="col-12">
-                            <label for="name" class="form-label">Full Name</label>
-                            <input type="text" class="form-control" id="name" name="name" placeholder="John Doe" required>
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" name="email" id="email" placeholder="you@example.com" required>
+                            <div class="form-text">We will send your order receipt to this email.</div>
                         </div>
 
                         <div class="col-12">
-                            <label for="phone" class="form-label">M-PESA Phone Number</label>
+                            <label for="whatsapp" class="form-label">WhatsApp Number</label>
                             <div class="input-group">
-                                <span class="input-group-text">+254</span>
-                                <input type="tel" class="form-control" id="phone" name="phone" placeholder="712345678" required>
+                                <span class="input-group-text"><i class="bi bi-whatsapp"></i></span>
+                                <input type="tel" class="form-control" name="whatsapp" placeholder="07..." required>
                             </div>
-                            <small class="text-muted">Enter the number that will pay via MPESA.</small>
+                            <small class="text-muted">We will use this to contact you about delivery.</small>
                         </div>
                     </div>
+                </div>
 
-                    <hr class="my-4">
-
-                    <h4 class="mb-3">Payment</h4>
-                    <div class="alert alert-warning">
-                        <i class="bi bi-info-circle"></i> 
-                        Payment will be requested on your phone via MPESA immediately after you click "Place Order".
+                <div class="card p-4 shadow-sm border-0">
+                    <h5 class="mb-3">Payment</h5>
+                    <div class="mb-3">
+                        <label for="mpesa" class="form-label">M-PESA Phone Number</label>
+                        <div class="input-group">
+                            <span class="input-group-text">+254</span>
+                            <input type="tel" class="form-control" name="mpesa_phone" id="mpesa" placeholder="712345678" required>
+                        </div>
                     </div>
-
+                    <div class="alert alert-warning">
+                        <i class="bi bi-phone"></i> Payment will be requested on this M-PESA number immediately after you click "Place Order".
+                    </div>
                     <button class="w-100 btn btn-primary btn-lg rounded-pill" type="submit">
-                        Place Order & Pay KES {{.Data.Total}} <!-- UPDATED -->
+                        Place Order & Pay KES {{.Total}}
                     </button>
-                </form>
-            </div>
+                </div>
+            </form>
         </div>
     </div>
 </div>

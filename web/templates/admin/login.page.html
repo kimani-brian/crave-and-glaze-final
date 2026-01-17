@@ -1,0 +1,46 @@
+{{template "base" .}}
+
+{{define "title"}}Admin Login{{end}}
+
+{{define "content"}}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5 col-lg-4">
+            <div class="card shadow-lg border-0 rounded-3 mt-5">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold text-primary">🔐 Admin</h2>
+                        <p class="text-muted">Please sign in to manage the shop.</p>
+                    </div>
+
+                    <!-- Show error message if login failed -->
+                    <!-- (We can detect this via URL query param ?error=true) -->
+                    <script>
+                        const urlParams = new URLSearchParams(window.location.search);
+                        if(urlParams.get('error')) {
+                            document.write('<div class="alert alert-danger text-center small">Invalid username or password</div>');
+                        }
+                    </script>
+
+                    <form action="/admin/login" method="POST">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold">USERNAME</label>
+                            <input type="text" name="username" class="form-control form-control-lg" placeholder="admin" required autofocus>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label text-muted small fw-bold">PASSWORD</label>
+                            <input type="password" name="password" class="form-control form-control-lg" placeholder="••••••" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 btn-lg rounded-pill">Sign In</button>
+                    </form>
+                </div>
+                <div class="card-footer bg-light text-center py-3">
+                    <a href="/" class="text-decoration-none small text-muted">&larr; Back to Shop</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

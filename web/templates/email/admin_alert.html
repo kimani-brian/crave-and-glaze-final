@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+    <div style="max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
+        
+        <h2 style="color: #d9534f; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+            🔔 New Order #{{.ID}}
+        </h2>
+
+        <div style="background-color: #f9f9f9; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+            <p style="margin: 0;"><strong>Customer:</strong> {{.CustomerName}}</p>
+            <p style="margin: 0;"><strong>Phone:</strong> <a href="tel:{{.CustomerPhone}}" style="text-decoration: none; color: #337ab7;">{{.CustomerPhone}}</a></p>
+            <p style="margin: 0;"><strong>Total Amount:</strong> KES {{.TotalAmount}}</p>
+        </div>
+
+        <h3>Order Details to Bake:</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <thead>
+                <tr style="background-color: #333; color: #fff;">
+                    <th style="padding: 10px; text-align: left;">Cake & Size</th>
+                    <th style="padding: 10px; text-align: left;">Customization</th>
+                    <th style="padding: 10px; text-align: center;">Qty</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Items}}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 10px; vertical-align: top;">
+                        <strong>{{.ProductName}}</strong><br>
+                        <span style="background-color: #eee; padding: 2px 6px; border-radius: 4px; font-size: 12px;">{{.WeightLabel}}</span>
+                    </td>
+                    <td style="padding: 10px; vertical-align: top;">
+                        <div style="font-size: 13px; color: #666;">Icing: <strong>{{.Icing}}</strong></div>
+                        {{if .Message}}
+                        <div style="margin-top: 5px; padding: 5px; background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; border-radius: 4px; font-style: italic;">
+                            "{{.Message}}"
+                        </div>
+                        {{end}}
+                    </td>
+                    <td style="padding: 10px; text-align: center; vertical-align: top;">
+                        <strong>{{.Quantity}}</strong>
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="http://localhost:8080/admin/orders/view?id={{.ID}}" 
+               style="background-color: #007bff; color: #fff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                Manage Order in Dashboard
+            </a>
+        </div>
+        
+        <p style="text-align: center; color: #999; font-size: 12px; margin-top: 20px;">
+            Sent from Crave & Glaze System
+        </p>
+    </div>
+</body>
+</html>

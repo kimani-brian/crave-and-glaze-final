@@ -18,13 +18,16 @@ type ProductVariant struct {
 	Price       float64
 }
 type Order struct {
-	ID            int
-	CustomerName  string
-	CustomerPhone string
-	TotalAmount   float64
-	Status        string // PENDING, PAID, FAILED
-	MpesaReceipt  string
-	CreatedAt     string // or time.Time
+	ID             int
+	FirstName      string // Was CustomerName
+	LastName       string // New
+	Email          string // New
+	WhatsappNumber string // New
+	CustomerPhone  string // This remains the MPESA Payment Number
+	TotalAmount    float64
+	Status         string
+	MpesaReceipt   string
+	CreatedAt      string
 }
 
 type OrderItem struct {
@@ -38,20 +41,19 @@ type OrderItem struct {
 }
 
 // TemplateData holds data sent from Go to HTML
+
 type TemplateData struct {
 	Title       string
 	CurrentYear int
-	Categories  []Category       // For the Navbar dropdown
-	Products    []Product        // For lists of cakes
-	Product     *Product         // For single cake details
-	Variants    []ProductVariant // For single cake size options
-	Orders      []Order          // For Admin Dashboard
-	Order       *Order           // For Admin Order Details
-	IsAdmin     bool             // To show/hide Admin links
-	CartTotal   float64          // To show cart total in navbar
-	CartCount   int
-	OrderItems  interface{} // To show number of items
-	Data        interface{}
+	Categories  []Category
+	Products    []Product
+	Product     *Product
+	Variants    []ProductVariant
+	Items       interface{} // Generic field to hold Cart Items
+	Total       float64     // Total Price
+	Order       *Order
+	OrderItems  interface{}
+	IsAdmin     bool
 }
 
 // Category struct
