@@ -6,14 +6,22 @@
 <div class="container py-5 text-center">
     <div class="card shadow-lg border-0 mx-auto" style="max-width: 500px;">
         <div class="card-body p-5">
+            
+            <!-- Loading Spinner -->
             <div class="mb-4">
-                <!-- Using a simple spinner or icon -->
-                <div class="spinner-grow text-success" role="status" style="width: 3rem; height: 3rem;">
+                <div id="spinner" class="spinner-grow text-success" role="status" style="width: 3rem; height: 3rem;">
                     <span class="visually-hidden">Loading...</span>
+                </div>
+                <!-- Success Checkmark (Hidden by default) -->
+                <div id="success-icon" class="text-success d-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="currentColor" class="bi bi-check-circle-fill" viewBox="0 0 16 16">
+                        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                    </svg>
                 </div>
             </div>
 
             <h2 class="mb-3" id="status-text">Check your Phone!</h2>
+            
             <p class="lead text-muted">
                 We have sent an M-PESA payment request to <strong>+{{.Order.CustomerPhone}}</strong> for <strong>KES {{.Order.TotalAmount}}</strong>.
             </p>
@@ -29,7 +37,7 @@
 
             <hr>
             
-            <p>Did the prompt fail to appear?</p>
+            <p class="small text-muted">Did the prompt fail to appear?</p>
             <a href="/payment?order_id={{.Order.ID}}" class="btn btn-outline-primary btn-sm">Retry Request</a>
             <a href="/" class="btn btn-link btn-sm text-decoration-none">Return Home</a>
         </div>
@@ -37,39 +45,60 @@
 </div>
 
 <!-- JavaScript to Auto-Check Payment Status -->
+<!-- JavaScript to Auto-Check Payment Status -->
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // Get the Order ID from the Go Template
         const orderID = {{.Order.ID}};
         const statusText = document.getElementById("status-text");
         
+        // CONFIGURATION
+        const pollInterval = 3000; // Check every 3 seconds
+        const maxTimeSeconds = 20; // 20 seconds total wait time (adjust as needed)
+        
+        // CALCULATIONS
+        let attempts = 0;
+        const maxAttempts = (maxTimeSeconds * 1000) / pollInterval; 
+
         function checkStatus() {
-            // Call the Go API endpoint we created
+            attempts++;
+            
+            // 1. TIMEOUT CHECK
+            if (attempts > maxAttempts) {
+                clearInterval(polling);
+                // Redirect to Failed Page because time is up
+                window.location.href = "/payment-failed";
+                return;
+            }
+
+            // 2. STATUS CHECK
             fetch(`/api/order/status?id=${orderID}`)
                 .then(response => response.json())
                 .then(data => {
-                    console.log("Payment Status:", data.status);
+                    console.log("Status:", data.status);
                     
                     if (data.status === "PAID") {
-                        // 1. Stop checking
+                        // SUCCESS
                         clearInterval(polling);
-                        
-                        // 2. Update UI to show success
                         statusText.innerText = "Payment Successful! 🎉";
                         statusText.classList.add("text-success");
-                        
-                        // 3. Redirect after 1 second
                         setTimeout(() => {
-                            // Redirect to the Order View page (or any thank you page)
-                            window.location.href = `/admin/orders/view?id=${orderID}`;
+                            window.location.href = `/order-confirmed?id=${orderID}`;
                         }, 1000);
+                    } 
+                    else if (data.status === "FAILED" || data.status === "CANCELLED") {
+                        // USER CANCELLED (If DB was updated)
+                        clearInterval(polling);
+                        window.location.href = "/payment-failed";
                     }
                 })
-                .catch(err => console.error("Error checking status:", err));
+                .catch(err => {
+                    console.error("Error:", err);
+                    // Optional: If API crashes, count as a fail after retries
+                });
         }
 
-        // Run the checkStatus function every 3000 milliseconds (3 seconds)
-        const polling = setInterval(checkStatus, 3000);
+        // Start the loop
+        const polling = setInterval(checkStatus, pollInterval);
     });
 </script>
 {{end}}

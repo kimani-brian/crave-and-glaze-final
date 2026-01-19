@@ -202,3 +202,33 @@ func (m *ProductModel) DeleteProduct(id int) error {
 	_, err = m.DB.Exec("DELETE FROM products WHERE id = $1", id)
 	return err
 }
+
+// Search finds products matching a keyword (case-insensitive)
+func (m *ProductModel) Search(query string) ([]models.Product, error) {
+	// We use ILIKE for case-insensitive matching in Postgres
+	stmt := `
+		SELECT p.id, p.name, p.description, p.image_url, c.name, COALESCE(MIN(v.price), 0)
+		FROM products p
+		LEFT JOIN product_variants v ON p.id = v.product_id
+		JOIN categories c ON p.category_id = c.id
+		WHERE (p.name ILIKE '%' || $1 || '%' OR p.description ILIKE '%' || $1 || '%') 
+		AND p.is_active = true
+		GROUP BY p.id, p.name, p.description, p.image_url, c.name
+		ORDER BY p.id DESC
+	`
+	rows, err := m.DB.Query(stmt, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var products []models.Product
+	for rows.Next() {
+		var p models.Product
+		err = rows.Scan(&p.ID, &p.Name, &p.Description, &p.ImageURL, &p.Category, &p.StartingPrice)
+		if err == nil {
+			products = append(products, p)
+		}
+	}
+	return products, nil
+}

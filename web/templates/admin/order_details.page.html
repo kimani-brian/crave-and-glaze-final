@@ -8,24 +8,75 @@
     </div>
 
     <div class="row">
-        <!-- Customer Info -->
+        <!-- LEFT COLUMN: Customer & Payment Info -->
         <div class="col-md-4">
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-primary text-white">Customer Details</div>
                 <div class="card-body">
                     <h5 class="card-title">{{.Order.FirstName}} {{.Order.LastName}}</h5>
+                    
                     <ul class="list-unstyled mt-3">
-                        <li class="mb-2"><strong>Email:</strong><br>{{if .Order.Email}}<a href="mailto:{{.Order.Email}}">{{.Order.Email}}</a>{{else}}<span class="text-muted">N/A</span>{{end}}</li>
-                        <li class="mb-2"><strong>WhatsApp:</strong><br>{{if .Order.WhatsappNumber}}<a href="https://wa.me/254{{.Order.WhatsappNumber}}" target="_blank" class="text-success text-decoration-none"><i class="bi bi-whatsapp"></i> Chat (+254{{.Order.WhatsappNumber}})</a>{{else}}<span class="text-muted">N/A</span>{{end}}</li>
-                        <li class="mb-2"><strong>M-PESA Number:</strong><br>{{.Order.CustomerPhone}}</li>
-                        <li class="mb-2"><strong>Date:</strong><br>{{.Order.CreatedAt}}</li>
+                        <!-- Email -->
+                        <li class="mb-2">
+                            <strong>Email:</strong><br>
+                            {{if .Order.Email}}
+                                <a href="mailto:{{.Order.Email}}">{{.Order.Email}}</a>
+                            {{else}}
+                                <span class="text-muted">N/A</span>
+                            {{end}}
+                        </li>
+                        
+                        <!-- WhatsApp -->
+                        <li class="mb-2">
+                            <strong>WhatsApp:</strong><br>
+                            {{if .Order.WhatsappNumber}}
+                                <a href="https://wa.me/254{{.Order.WhatsappNumber}}" target="_blank" class="text-success text-decoration-none">
+                                    <i class="bi bi-whatsapp"></i> Chat (+254{{.Order.WhatsappNumber}})
+                                </a>
+                            {{else}}
+                                <span class="text-muted">N/A</span>
+                            {{end}}
+                        </li>
+                        
+                        <!-- Phone Used for Payment -->
+                        <li class="mb-2">
+                            <strong>M-PESA Number:</strong><br>
+                            {{.Order.CustomerPhone}}
+                        </li>
+
+                        <!-- M-PESA Receipt (Only shows if Paid via MPESA) -->
+                        {{if .Order.MpesaReceipt}}
+                        <li class="mb-2 mt-3 p-2 bg-light border rounded border-success">
+                            <strong><i class="bi bi-receipt"></i> Payment Confirmed:</strong><br>
+                            <span class="text-success fw-bold">{{.Order.MpesaReceipt}}</span>
+                        </li>
+                        {{end}}
+
+                        <!-- Date -->
+                        <li class="mb-2 mt-2">
+                            <strong>Date:</strong><br>
+                            {{.Order.CreatedAt}}
+                        </li>
                     </ul>
+                    
                     <hr>
+                    
+                    <!-- Current Status Badge -->
                     <p class="mb-1"><strong>Status:</strong> 
-                        {{if eq .Order.Status "PAID"}}<span class="badge bg-success">PAID</span>
-                        {{else if eq .Order.Status "PENDING"}}<span class="badge bg-warning text-dark">PENDING</span>
-                        {{else}}<span class="badge bg-secondary">{{.Order.Status}}</span>{{end}}
+                        {{if eq .Order.Status "PAID"}}
+                            <span class="badge bg-success">PAID</span>
+                        {{else if eq .Order.Status "PENDING"}}
+                            <span class="badge bg-warning text-dark">PENDING</span>
+                        {{else if eq .Order.Status "COMPLETED"}}
+                            <span class="badge bg-primary">COMPLETED</span>
+                        {{else if eq .Order.Status "CANCELLED"}}
+                            <span class="badge bg-danger">CANCELLED</span>
+                        {{else}}
+                            <span class="badge bg-secondary">{{.Order.Status}}</span>
+                        {{end}}
                     </p>
+                    
+                    <!-- Update Status Form -->
                     <div class="mt-3">
                         <form action="/admin/order/status" method="POST">
                             <input type="hidden" name="order_id" value="{{.Order.ID}}">
@@ -44,14 +95,13 @@
             </div>
         </div>
 
-        <!-- Order Items -->
+        <!-- RIGHT COLUMN: Ordered Items -->
         <div class="col-md-8">
             <div class="card shadow-sm">
                 <div class="card-header">Ordered Items</div>
                 <table class="table table-striped mb-0 align-middle">
                     <thead>
                         <tr>
-                            <!-- Added Image Column -->
                             <th style="width: 80px;">Image</th>
                             <th>Cake</th>
                             <th>Details</th>
@@ -63,14 +113,18 @@
                     <tbody>
                         {{range .OrderItems}}
                         <tr>
-                            <!-- Added Image Body -->
+                            <!-- Product Image -->
                             <td>
-                                <img src="{{.ImageURL}}" class="rounded border" style="width: 60px; height: 60px; object-fit: cover;">
+                                <img src="{{.ImageURL}}" class="rounded border" style="width: 60px; height: 60px; object-fit: cover;" alt="Cake">
                             </td>
+                            
+                            <!-- Name & Size -->
                             <td>
                                 <strong>{{.ProductName}}</strong><br>
                                 <span class="badge bg-light text-dark border">{{.WeightLabel}}</span>
                             </td>
+                            
+                            <!-- Icing & Message -->
                             <td>
                                 <small class="d-block text-muted">Icing: {{.Icing}}</small>
                                 {{if .Message}}
@@ -79,8 +133,14 @@
                                 </div>
                                 {{end}}
                             </td>
+                            
+                            <!-- Qty -->
                             <td>{{.Quantity}}</td>
+                            
+                            <!-- Unit Price -->
                             <td class="text-end">{{.Price}}</td>
+                            
+                            <!-- Subtotal (Calculated roughly here or passed from backend) -->
                             <td class="text-end fw-bold">{{.Price}}</td>
                         </tr>
                         {{end}}

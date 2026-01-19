@@ -90,9 +90,17 @@ func (m *OrderModel) UpdateStatus(id int, status string) error {
 
 // Get Fetch a single order by ID
 func (m *OrderModel) Get(id int) (*models.Order, error) {
-	stmt := `SELECT id, first_name, last_name, email, whatsapp_number, customer_phone, total_amount, status, created_at FROM orders WHERE id = $1`
+	// Added mpesa_receipt to the SELECT list
+	stmt := `
+		SELECT id, first_name, last_name, email, customer_phone, whatsapp_number, 
+		       total_amount, status, COALESCE(mpesa_receipt, ''), created_at 
+		FROM orders WHERE id = $1
+	`
 	o := &models.Order{}
-	err := m.DB.QueryRow(stmt, id).Scan(&o.ID, &o.FirstName, &o.LastName, &o.Email, &o.WhatsappNumber, &o.CustomerPhone, &o.TotalAmount, &o.Status, &o.CreatedAt)
+	err := m.DB.QueryRow(stmt, id).Scan(
+		&o.ID, &o.FirstName, &o.LastName, &o.Email, &o.CustomerPhone, &o.WhatsappNumber,
+		&o.TotalAmount, &o.Status, &o.MpesaReceipt, &o.CreatedAt,
+	)
 	if err != nil {
 		return nil, err
 	}

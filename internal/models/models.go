@@ -54,6 +54,7 @@ type TemplateData struct {
 	Order       *Order
 	OrderItems  interface{}
 	IsAdmin     bool
+	CartCount   int
 }
 
 // Category struct
