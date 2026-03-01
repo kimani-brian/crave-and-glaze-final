@@ -35,9 +35,8 @@ type Application struct {
 
 func main() {
 
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, assuming production environment.")
 	}
 	// 1. Init DB
 	database.InitDB()
