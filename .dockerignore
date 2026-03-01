@@ -1,0 +1,5 @@
+.git
+postgres_data
+docker-compose.yml
+Dockerfile
+README.md

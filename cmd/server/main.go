@@ -46,7 +46,7 @@ func main() {
 		os.Getenv("MPESA_KEY"),
 		os.Getenv("MPESA_SECRET"),
 	)
-	mpesaService.Config.CallbackURL = "https://0e12b59ac008.ngrok-free.app/api/callback/mpesa"
+	mpesaService.Config.CallbackURL = "https://7352-102-213-49-75.ngrok-free.app/api/callback/mpesa"
 
 	mailService := mailer.New(
 		os.Getenv("SMTP_HOST"),

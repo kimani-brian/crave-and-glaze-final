@@ -1,16 +1,53 @@
-version: '3.8'
+
 
 services:
+  # 1. The Go Application
+  app:
+    container_name: crave_glaze_app
+    build: .
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    # Pass environment variables from .env to the container
+    environment:
+      # NETWORK OVERRIDES:
+      # Inside Docker, the host is the service name "db"
+      - DB_HOST=db
+      # Inside Docker, Postgres listens on standard 5432
+      - DB_PORT=5432
+      
+      # Pass the rest from your .env file
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      
+      - MPESA_KEY=${MPESA_KEY}
+      - MPESA_SECRET=${MPESA_SECRET}
+      - MPESA_PASSKEY=${MPESA_PASSKEY}
+      - MPESA_ENV=${MPESA_ENV}
+      
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_EMAIL=${SMTP_EMAIL}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+
+  # 2. The Database
   db:
     image: postgres:15-alpine
     container_name: crave_glaze_db
     restart: always
     environment:
-      # Docker will read these values from your .env file automatically
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     ports:
+      # Maps localhost:5433 -> container:5432 (Matches your .env DB_PORT)
       - "${DB_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
