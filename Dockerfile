@@ -34,6 +34,8 @@ COPY --from=builder /app/main .
 # If you don't do this, the app will panic because it can't find templates
 COPY --from=builder /app/web ./web
 
+COPY --from=builder /app/schema.sql ./schema.sql
+
 # Expose the port your app runs on
 EXPOSE 8080
 

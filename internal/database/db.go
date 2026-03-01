@@ -63,4 +63,27 @@ func InitDB() {
 	}
 
 	fmt.Println("Successfully connected to Database!")
+
+	// ==========================================
+	// 3. AUTO-MIGRATION (Create Tables)
+	// ==========================================
+	fmt.Println("Attempting to run database migrations...")
+
+	// Read the schema.sql file
+	// NOTE: This file must be copied into the Docker container in your Dockerfile
+	schema, err := os.ReadFile("schema.sql")
+	if err != nil {
+		// If we can't find the file, just log a warning.
+		// (This happens if you run 'go run main.go' from the wrong folder locally)
+		log.Printf("Warning: Could not read schema.sql: %v\n", err)
+	} else {
+		// Execute the SQL statements
+		_, err = DB.Exec(string(schema))
+		if err != nil {
+			// If tables already exist, this might error, which is fine.
+			log.Printf("Warning: Migration execution msg: %v\n", err)
+		} else {
+			fmt.Println("Database Migration Successful! Tables created.")
+		}
+	}
 }
