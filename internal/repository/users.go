@@ -3,8 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
-
-	"golang.org/x/crypto/bcrypt"
+	"os"
 )
 
 type UserModel struct {
@@ -12,24 +11,23 @@ type UserModel struct {
 }
 
 func (m *UserModel) Authenticate(username, password string) (int, error) {
-	var id int
-	var hashedPassword string
+	// 1. Get credentials from Environment Variables (Render/Docker)
+	expectedUser := os.Getenv("ADMIN_USERNAME")
+	expectedPass := os.Getenv("ADMIN_PASSWORD")
 
-	stmt := `SELECT id, password_hash FROM users WHERE username = $1`
-	row := m.DB.QueryRow(stmt, username)
-	err := row.Scan(&id, &hashedPassword)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return 0, errors.New("invalid credentials")
-		}
-		return 0, err
+	// 2. Fallback for Localhost (If you forgot to set env vars locally)
+	// This ensures you can always login locally with admin/password123
+	if expectedUser == "" {
+		expectedUser = "admin"
+	}
+	if expectedPass == "" {
+		expectedPass = "password123"
 	}
 
-	// Compare the stored hash with the password provided
-	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-	if err != nil {
-		return 0, errors.New("invalid credentials")
+	// 3. Compare Input vs Expected
+	if username == expectedUser && password == expectedPass {
+		return 1, nil // Return ID 1 for the admin
 	}
 
-	return id, nil
+	return 0, errors.New("invalid credentials")
 }

@@ -1025,20 +1025,25 @@ func (app *Application) loginPostHandler(w http.ResponseWriter, r *http.Request)
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 
+	// --- DEBUG LOGS (Remove these later) ---
+	// This will print to your Render console so you can see what is happening
+	log.Printf("Login Attempt: User=%s", username)
+	// ----------------------------------------
+
 	id, err := app.Users.Authenticate(username, password)
 	if err != nil {
+		log.Println("Login Failed:", err)
 		http.Redirect(w, r, "/admin/login?error=true", http.StatusSeeOther)
 		return
 	}
 
-	// Login Success: Set a session cookie
-	// In a real production app, use a secure session library like 'alexedwards/scs'
-	// For this tutorial, we will use a simple cookie.
+	// Login Success
 	http.SetCookie(w, &http.Cookie{
 		Name:     "admin_session",
-		Value:    fmt.Sprintf("%d", id), // Storing ID directly is not super secure but works for Phase 1
+		Value:    fmt.Sprintf("%d", id),
 		Path:     "/",
-		HttpOnly: true, // JavaScript cannot read this
+		HttpOnly: true,
+		// Secure: true, // Uncomment this line if you are on HTTPS (Render)
 	})
 
 	http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
