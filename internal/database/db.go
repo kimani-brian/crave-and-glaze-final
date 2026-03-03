@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	_ "github.com/lib/pq"
 )
@@ -15,14 +16,18 @@ func InitDB() {
 	var err error
 	var connStr string
 
-	// 1. Check if we are on Render (They provide DATABASE_URL)
+	// ==========================================
+	// 1. DETECT ENVIRONMENT (Render or Local)
+	// ==========================================
+
 	dbURL := os.Getenv("DATABASE_URL")
 
 	if dbURL != "" {
-		// We are on Render! Use the provided URL.
+		// Running on Render (Production)
 		connStr = dbURL
+		fmt.Println("Using Render DATABASE_URL")
 	} else {
-		// 2. We are on Localhost / Docker Compose
+		// Running Locally / Docker
 		dbHost := os.Getenv("DB_HOST")
 		if dbHost == "" {
 			dbHost = "localhost"
@@ -48,42 +53,71 @@ func InitDB() {
 			dbName = "crave_glaze"
 		}
 
-		connStr = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-			dbHost, dbPort, dbUser, dbPass, dbName)
+		connStr = fmt.Sprintf(
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+			dbHost, dbPort, dbUser, dbPass, dbName,
+		)
+
+		fmt.Println("Using Local Database Config")
 	}
 
-	// Connect
+	// ==========================================
+	// 2. CONNECT TO DATABASE
+	// ==========================================
+
 	DB, err = sql.Open("postgres", connStr)
 	if err != nil {
-		log.Fatal("Error connecting to the database: ", err)
+		log.Fatal("Error connecting to database:", err)
 	}
 
 	if err = DB.Ping(); err != nil {
-		log.Fatal("Error pinging database: ", err)
+		log.Fatal("Error pinging database:", err)
 	}
 
 	fmt.Println("Successfully connected to Database!")
 
 	// ==========================================
-	// 3. AUTO-MIGRATION (Create Tables)
+	// 3. RUN SCHEMA (Create Tables If Missing)
 	// ==========================================
-	fmt.Println("Attempting to run database migrations...")
 
-	// Read the schema.sql file
-	// NOTE: This file must be copied into the Docker container in your Dockerfile
+	fmt.Println("Running schema.sql...")
+
 	schema, err := os.ReadFile("schema.sql")
 	if err != nil {
-		// If we can't find the file, just log a warning.
-		// (This happens if you run 'go run main.go' from the wrong folder locally)
 		log.Printf("Warning: Could not read schema.sql: %v\n", err)
 	} else {
-		// Execute the SQL statements
 		_, err = DB.Exec(string(schema))
 		if err != nil {
-			// If tables already exist, this might error, which is fine.
-			log.Printf("Warning: Migration execution msg: %v\n", err)
+			log.Printf("Schema execution warning: %v\n", err)
 		} else {
-			fmt.Println("Database Migration Successful! Tables created.")
+			fmt.Println("Schema executed successfully.")
 		}
 	}
+
+	// ==========================================
+	// 4. RUN PRODUCTION MIGRATIONS (IMPORTANT)
+	// ==========================================
+
+	log.Println("Checking for missing columns...")
+
+	migrations := []string{
+		"ALTER TABLE orders ADD COLUMN IF NOT EXISTS first_name VARCHAR(100);",
+		"ALTER TABLE orders ADD COLUMN IF NOT EXISTS last_name VARCHAR(100);",
+		"ALTER TABLE orders ADD COLUMN IF NOT EXISTS email VARCHAR(150);",
+		"ALTER TABLE orders ADD COLUMN IF NOT EXISTS whatsapp_number VARCHAR(50);",
+		"ALTER TABLE orders ADD COLUMN IF NOT EXISTS mpesa_receipt VARCHAR(50);",
+		"ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_phone VARCHAR(20);",
+	}
+
+	for _, query := range migrations {
+		_, err := DB.Exec(query)
+		if err != nil {
+			// Ignore harmless "already exists" type errors
+			if !strings.Contains(err.Error(), "already exists") {
+				log.Printf("Migration Warning: %v\n", err)
+			}
+		}
+	}
+
+	log.Println("Database Migrations Complete.")
 }
