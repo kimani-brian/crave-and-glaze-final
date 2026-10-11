@@ -1,29 +1,27 @@
 package models
 
-// Product represents the general cake details
 type Product struct {
 	ID            int
 	Name          string
 	Description   string
 	ImageURL      string
-	Category      string  // We might fetch the category name via JOIN
-	StartingPrice float64 // Calculated field (min price of variants)
+	Category      string
+	StartingPrice float64
 }
 
-// ProductVariant represents the specific size/price options (e.g., 1KG = 4000)
 type ProductVariant struct {
 	ID          int
 	ProductID   int
-	WeightLabel string // e.g., "1 Kg"
+	WeightLabel string
 	Price       float64
 }
 type Order struct {
 	ID             int
-	FirstName      string // Was CustomerName
-	LastName       string // New
-	Email          string // New
-	WhatsappNumber string // New
-	CustomerPhone  string // This remains the MPESA Payment Number
+	FirstName      string
+	LastName       string
+	Email          string
+	WhatsappNumber string
+	CustomerPhone  string
 	TotalAmount    float64
 	Status         string
 	MpesaReceipt   string
@@ -40,8 +38,6 @@ type OrderItem struct {
 	PriceAtPurchase  float64
 }
 
-// TemplateData holds data sent from Go to HTML
-
 type TemplateData struct {
 	Title       string
 	CurrentYear int
@@ -49,8 +45,8 @@ type TemplateData struct {
 	Products    []Product
 	Product     *Product
 	Variants    []ProductVariant
-	Items       interface{} // Generic field to hold Cart Items
-	Total       float64     // Total Price
+	Items       interface{}
+	Total       float64
 	Order       *Order
 	OrderItems  interface{}
 	IsAdmin     bool
@@ -86,5 +82,5 @@ type CallbackMetadata struct {
 
 type CallbackItem struct {
 	Name  string      `json:"Name"`
-	Value interface{} `json:"Value"` // interface{} because Value can be string or float
+	Value interface{} `json:"Value"`
 }

@@ -45,7 +45,12 @@ func main() {
 		os.Getenv("MPESA_KEY"),
 		os.Getenv("MPESA_SECRET"),
 	)
-	mpesaService.Config.CallbackURL = "https://crave-and-glaze-final.onrender.com/api/callback/mpesa"
+	if envCallback := os.Getenv("MPESA_CALLBACK_URL"); envCallback != "" {
+		mpesaService.Config.CallbackURL = envCallback
+	} else {
+		mpesaService.Config.CallbackURL = "http://169.58.118.15:8080/api/callback/mpesa"
+	}
+	log.Printf("M-Pesa callback URL: %s", mpesaService.Config.CallbackURL)
 
 	mailService := mailer.New(
 		os.Getenv("SMTP_HOST"),

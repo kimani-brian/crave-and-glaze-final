@@ -27,6 +27,7 @@ services:
       - MPESA_SECRET=${MPESA_SECRET}
       - MPESA_PASSKEY=${MPESA_PASSKEY}
       - MPESA_ENV=${MPESA_ENV}
+      - MPESA_CALLBACK_URL=${MPESA_CALLBACK_URL}
       
       - ADMIN_USERNAME=${ADMIN_USERNAME}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
@@ -36,6 +37,9 @@ services:
       - SMTP_EMAIL=${SMTP_EMAIL}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - ADMIN_EMAIL=${ADMIN_EMAIL}
+    volumes:
+      # Admin-uploaded product images persist across rebuilds
+      - uploads_data:/root/web/static/uploads
 
   # 2. The Database
   db:
@@ -47,11 +51,13 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     ports:
-      # Maps localhost:5433 -> container:5432 (Matches your .env DB_PORT)
-      - "${DB_PORT}:5432"
+      # Loopback-only publish: host ${DB_PORT} -> container 5432.
+      # Set DB_PORT=5234 in VPS .env (local dev uses 5433). Never expose publicly.
+      - "127.0.0.1:${DB_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
 
 volumes:
   postgres_data:
+  uploads_data:

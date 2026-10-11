@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -14,7 +15,7 @@ import (
 type MpesaConfig struct {
 	ConsumerKey    string
 	ConsumerSecret string
-	BusinessCode   string // The Paybill (174379)
+	BusinessCode   string
 	Passkey        string
 	CallbackURL    string // Where Safaricom sends the result
 }
@@ -25,15 +26,23 @@ type Service struct {
 	Client *http.Client
 }
 
-// NewService creates a new instance
+// NewService creates a new instance.
+// Callback URL comes from MPESA_CALLBACK_URL env, falling back to the VPS
+// public address. NOTE: Safaricom requires public HTTPS, so callbacks over
+// plain HTTP IP:port will fail and orders stay PENDING until a domain+HTTPS
+// is set (accepted for now — option A).
 func NewService(key, secret string) *Service {
+	callbackURL := os.Getenv("MPESA_CALLBACK_URL")
+	if callbackURL == "" {
+		callbackURL = "http://169.58.118.15:8080/api/callback/mpesa"
+	}
 	return &Service{
 		Config: MpesaConfig{
 			ConsumerKey:    key,
 			ConsumerSecret: secret,
-			BusinessCode:   "174379",                                                           // Default Sandbox Paybill
-			Passkey:        "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919", // Default Sandbox Passkey
-			CallbackURL:    "https://e3d42c404fab.ngrok-free.app/api/callback",                 // Needs a real URL for callbacks to work
+			BusinessCode:   "174379",
+			Passkey:        "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919",
+			CallbackURL:    callbackURL,
 		},
 		Client: &http.Client{Timeout: 30 * time.Second},
 	}
@@ -123,6 +132,6 @@ func (s *Service) InitiateSTKPush(phoneNumber string, amount float64, orderID in
 		return fmt.Errorf("STK Push Failed: %s", string(bodyBytes))
 	}
 
-	// Success!
+	// Success
 	return nil
 }

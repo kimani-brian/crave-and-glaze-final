@@ -24,12 +24,11 @@ CREATE TABLE IF NOT EXISTS products (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Product Variants (The specific logic: 1KG = 4000sh, 2KG = 7500sh)
 CREATE TABLE IF NOT EXISTS product_variants (
     id SERIAL PRIMARY KEY,
     product_id INT REFERENCES products(id) ON DELETE CASCADE,
-    weight_label VARCHAR(50) NOT NULL, -- e.g. "1 Kg", "2 Kg"
-    price DECIMAL(10, 2) NOT NULL,     -- e.g. 4000.00
+    weight_label VARCHAR(50) NOT NULL, 
+    price DECIMAL(10, 2) NOT NULL,     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -37,9 +36,9 @@ CREATE TABLE IF NOT EXISTS product_variants (
 CREATE TABLE IF NOT EXISTS orders (
     id SERIAL PRIMARY KEY,
     customer_name VARCHAR(100) NOT NULL,
-    customer_phone VARCHAR(20) NOT NULL, -- Crucial for MPESA
+    customer_phone VARCHAR(20) NOT NULL,
     total_amount DECIMAL(10, 2) NOT NULL,
-    status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, PAID, FAILED
+    status VARCHAR(20) DEFAULT 'PENDING', 
     mpesa_receipt VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -50,7 +49,7 @@ CREATE TABLE IF NOT EXISTS order_items (
     order_id INT REFERENCES orders(id),
     product_variant_id INT REFERENCES product_variants(id),
     quantity INT DEFAULT 1,
-    icing_flavor VARCHAR(100), -- "Whipping Cream", etc.
+    icing_flavor VARCHAR(100), 
     custom_message TEXT,
     price_at_purchase DECIMAL(10, 2) NOT NULL
 );
