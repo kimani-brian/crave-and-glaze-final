@@ -48,7 +48,7 @@ func main() {
 	if envCallback := os.Getenv("MPESA_CALLBACK_URL"); envCallback != "" {
 		mpesaService.Config.CallbackURL = envCallback
 	} else {
-		mpesaService.Config.CallbackURL = "http://169.58.118.15:8080/api/callback/mpesa"
+		mpesaService.Config.CallbackURL = "https://craveandglaze.duckdns.org/api/callback/mpesa"
 	}
 	log.Printf("M-Pesa callback URL: %s", mpesaService.Config.CallbackURL)
 

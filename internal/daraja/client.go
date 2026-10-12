@@ -27,14 +27,12 @@ type Service struct {
 }
 
 // NewService creates a new instance.
-// Callback URL comes from MPESA_CALLBACK_URL env, falling back to the VPS
-// public address. NOTE: Safaricom requires public HTTPS, so callbacks over
-// plain HTTP IP:port will fail and orders stay PENDING until a domain+HTTPS
-// is set (accepted for now — option A).
+// Callback URL comes from MPESA_CALLBACK_URL env, falling back to the public
+// HTTPS domain (Safaricom requires HTTPS — now satisfied via Caddy).
 func NewService(key, secret string) *Service {
 	callbackURL := os.Getenv("MPESA_CALLBACK_URL")
 	if callbackURL == "" {
-		callbackURL = "http://169.58.118.15:8080/api/callback/mpesa"
+		callbackURL = "https://craveandglaze.duckdns.org/api/callback/mpesa"
 	}
 	return &Service{
 		Config: MpesaConfig{

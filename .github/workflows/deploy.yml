@@ -20,6 +20,7 @@ jobs:
             cd /opt/crave-and-glaze
             git fetch origin main
             git reset --hard origin/main
+            docker network create proxy || true
             docker compose up -d --build
             docker image prune -f
             docker compose ps
@@ -39,3 +40,5 @@ jobs:
                 exit 1
               fi
             done
+            echo "Checking public HTTPS (warn-only; Caddy in /opt/portfolio must have new Caddyfile)..."
+            curl -fsS -o /dev/null -w "CRAVE-HTTPS:%{http_code}\n" https://craveandglaze.duckdns.org/ || echo "WARNING: https://craveandglaze.duckdns.org not ready yet (portfolio Caddy deploy pending?)"

@@ -40,6 +40,9 @@ services:
     volumes:
       # Admin-uploaded product images persist across rebuilds
       - uploads_data:/root/web/static/uploads
+    networks:
+      - default
+      - proxy
 
   # 2. The Database
   db:
@@ -57,6 +60,13 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+networks:
+  # Shared front-door network with portfolio's Caddy (briankimani.duckdns.org host).
+  # Caddy routes craveandglaze.duckdns.org -> crave_glaze_app:8080 over this net.
+  # Created on VPS via `docker network create proxy` (workflows do this too).
+  proxy:
+    external: true
 
 volumes:
   postgres_data:
