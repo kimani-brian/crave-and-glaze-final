@@ -3,6 +3,7 @@ name: Deploy to VPS
 on:
   push:
     branches: [main]
+  workflow_dispatch:  # manual "Run workflow" button in Actions tab
 
 jobs:
   deploy:
