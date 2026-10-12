@@ -34,7 +34,6 @@ services:
       - SMTP_EMAIL=${SMTP_EMAIL}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - ADMIN_EMAIL=${ADMIN_EMAIL}
-      - ADMIN_WHATSAPP=${ADMIN_WHATSAPP}
     volumes:
       # Admin-uploaded product images persist across rebuilds
       - uploads_data:/root/web/static/uploads
