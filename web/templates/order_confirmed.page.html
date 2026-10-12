@@ -12,17 +12,45 @@
                 </svg>
             </div>
 
-            <h2 class="mb-3 fw-bold text-success">Payment Successful!</h2>
-            
-            <!-- FIXED: Using FirstName instead of CustomerName -->
+            <h2 class="mb-3 fw-bold text-success">Order Received!</h2>
+
             <p class="lead text-muted">
-                Thank you, <strong>{{.Order.FirstName}}</strong>! We have received your payment.
+                Thank you, <strong>{{.Order.FirstName}}</strong>! Your order <strong>#{{.Order.ID}}</strong> has been placed.
             </p>
-            <p>Your order <strong>#{{.Order.ID}}</strong> is now being processed.</p>
+
+            {{if .OrderItems}}
+            <ul class="list-group mb-3 text-start shadow-sm">
+                {{range .OrderItems}}
+                <li class="list-group-item d-flex justify-content-between lh-sm">
+                    <div>
+                        <h6 class="my-0">{{.ProductName}} ({{.WeightLabel}})</h6>
+                        <small class="text-muted">Qty: {{.Quantity}}{{if .Icing}} | Icing: {{.Icing}}{{end}}</small>
+                    </div>
+                    <span class="text-muted">KES {{.Price}}</span>
+                </li>
+                {{end}}
+                <li class="list-group-item d-flex justify-content-between bg-light">
+                    <span class="fw-bold">Total (KES)</span>
+                    <strong class="text-success">{{.Order.TotalAmount}}</strong>
+                </li>
+            </ul>
+            {{end}}
 
             <hr class="my-4">
 
-            <!-- ADDED: Return Home & Browse Buttons -->
+            <!-- One tap delivers the order summary to the bakery's WhatsApp -->
+            <div class="alert alert-warning text-start">
+                <strong>You're almost done!</strong> Please click the button below to forward your order details to our WhatsApp team so we can begin processing it immediately.
+            </div>
+            <div class="d-grid gap-2 col-10 mx-auto mb-3">
+                <a href="{{.WhatsAppURL}}" target="_blank" rel="noopener" class="btn btn-success btn-lg">
+                    <i class="bi bi-whatsapp"></i> Send Order via WhatsApp
+                </a>
+            </div>
+            <p class="small text-muted">Your order details are already filled in — just press send in WhatsApp.</p>
+
+            <hr class="my-4">
+
             <div class="d-grid gap-2 col-8 mx-auto">
                 <a href="/cakes" class="btn btn-primary btn-lg">Browse More Cakes 🎂</a>
                 <a href="/" class="btn btn-outline-secondary">Return Home</a>

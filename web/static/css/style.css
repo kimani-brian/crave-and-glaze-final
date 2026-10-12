@@ -160,3 +160,89 @@ body {
     z-index: 10;
     box-shadow: 0 20px 40px rgba(0,0,0,0.3);
 }
+
+/* =========================================
+   SHOP CARDS
+   ========================================= */
+
+.cake-img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+}
+
+.cake-name {
+    font-size: 1rem;
+    line-height: 1.3;
+}
+
+.cake-desc {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    min-height: 2.55em;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* =========================================
+   FOOTER
+   ========================================= */
+
+.site-footer {
+    border-top: 3px solid var(--primary-color);
+}
+
+.footer-link {
+    color: rgba(255, 255, 255, 0.65);
+    text-decoration: none;
+}
+
+.footer-link:hover {
+    color: #fff;
+}
+
+/* =========================================
+   MOBILE
+   ========================================= */
+
+@media (max-width: 991px) {
+    .hero-section {
+        min-height: auto;
+        padding: 48px 0;
+    }
+    .hero-section .display-3 {
+        font-size: 2.2rem;
+    }
+    /* Full-width rows inside the collapsed menu */
+    #navbarNav .nav-item {
+        width: 100%;
+    }
+    #navbarNav .nav-item form.d-flex {
+        width: 100%;
+        margin: 8px 0;
+    }
+    #navbarNav .nav-item form.d-flex input[type="search"] {
+        flex: 1;
+    }
+    #navbarNav .nav-link.btn {
+        text-align: left;
+        margin: 4px 0 !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .hero-section {
+        padding: 36px 0;
+    }
+    .hero-section .display-3 {
+        font-size: 1.85rem;
+    }
+    .cake-name {
+        font-size: 0.9rem;
+    }
+    .cake-card .card-body {
+        padding: 0.75rem;
+    }
+}

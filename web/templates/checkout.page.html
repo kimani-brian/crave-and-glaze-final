@@ -70,19 +70,12 @@
                 </div>
 
                 <div class="card p-4 shadow-sm border-0">
-                    <h5 class="mb-3">Payment</h5>
-                    <div class="mb-3">
-                        <label for="mpesa" class="form-label">M-PESA Phone Number</label>
-                        <div class="input-group">
-                            <span class="input-group-text">+254</span>
-                            <input type="tel" class="form-control" name="mpesa_phone" id="mpesa" placeholder="712345678" required>
-                        </div>
-                    </div>
-                    <div class="alert alert-warning">
-                        <i class="bi bi-phone"></i> Payment will be requested on this M-PESA number immediately after you click "Place Order".
+                    <h5 class="mb-3">Confirm Your Order</h5>
+                    <div class="alert alert-success">
+                        <i class="bi bi-whatsapp"></i> After placing your order, you'll confirm it with one tap via WhatsApp. We will contact you about delivery and payment.
                     </div>
                     <button class="w-100 btn btn-primary btn-lg rounded-pill" type="submit">
-                        Place Order & Pay KES {{.Total}}
+                        Review Order — KES {{.Total}}
                     </button>
                 </div>
             </form>

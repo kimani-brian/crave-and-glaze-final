@@ -51,6 +51,12 @@ type TemplateData struct {
 	OrderItems  interface{}
 	IsAdmin     bool
 	CartCount   int
+	WhatsAppURL string
+	// Review-step contact details (POST /checkout renders, POST /checkout/confirm consumes)
+	FirstName string
+	LastName  string
+	Email     string
+	Phone     string
 }
 
 // Category struct
@@ -58,29 +64,4 @@ type Category struct {
 	ID   int
 	Name string
 	Slug string
-}
-
-// --- MPESA Callback Structures ---
-
-type MpesaCallbackResponse struct {
-	Body struct {
-		StkCallback StkCallback `json:"stkCallback"`
-	} `json:"Body"`
-}
-
-type StkCallback struct {
-	MerchantRequestID string           `json:"MerchantRequestID"`
-	CheckoutRequestID string           `json:"CheckoutRequestID"`
-	ResultCode        int              `json:"ResultCode"`
-	ResultDesc        string           `json:"ResultDesc"`
-	CallbackMetadata  CallbackMetadata `json:"CallbackMetadata"`
-}
-
-type CallbackMetadata struct {
-	Item []CallbackItem `json:"Item"`
-}
-
-type CallbackItem struct {
-	Name  string      `json:"Name"`
-	Value interface{} `json:"Value"`
 }

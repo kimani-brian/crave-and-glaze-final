@@ -22,7 +22,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/server/main.go
 # STAGE 2: Run the Binary (Tiny Image)
 FROM alpine:latest
 
-# Install CA Certs (Required for MPESA & Gmail HTTPS)
+# Install CA Certs (Required for Gmail SMTP over TLS)
 RUN apk --no-cache add ca-certificates tzdata
 
 WORKDIR /root/

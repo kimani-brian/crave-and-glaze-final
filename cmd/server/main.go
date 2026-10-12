@@ -1,11 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"time"
 
@@ -16,7 +16,6 @@ import (
 	"github.com/joho/godotenv"
 
 	"crave-and-glaze/internal/cart"
-	"crave-and-glaze/internal/daraja"
 	"crave-and-glaze/internal/database"
 	"crave-and-glaze/internal/mailer"
 	"crave-and-glaze/internal/models"
@@ -28,7 +27,6 @@ import (
 type Application struct {
 	Products *repository.ProductModel
 	Orders   *repository.OrderModel
-	Mpesa    *daraja.Service
 	Users    *repository.UserModel
 	Mailer   *mailer.Mailer
 }
@@ -41,17 +39,6 @@ func main() {
 	// 1. Init DB
 	database.InitDB()
 
-	mpesaService := daraja.NewService(
-		os.Getenv("MPESA_KEY"),
-		os.Getenv("MPESA_SECRET"),
-	)
-	if envCallback := os.Getenv("MPESA_CALLBACK_URL"); envCallback != "" {
-		mpesaService.Config.CallbackURL = envCallback
-	} else {
-		mpesaService.Config.CallbackURL = "https://craveandglaze.duckdns.org/api/callback/mpesa"
-	}
-	log.Printf("M-Pesa callback URL: %s", mpesaService.Config.CallbackURL)
-
 	mailService := mailer.New(
 		os.Getenv("SMTP_HOST"),
 		os.Getenv("SMTP_PORT"),
@@ -63,7 +50,6 @@ func main() {
 	app := &Application{
 		Products: &repository.ProductModel{DB: database.DB},
 		Orders:   &repository.OrderModel{DB: database.DB},
-		Mpesa:    mpesaService,
 		Users:    &repository.UserModel{DB: database.DB},
 		Mailer:   mailService,
 	}
@@ -100,16 +86,11 @@ func main() {
 	mux.HandleFunc("POST /cart/remove", app.removeFromCartHandler)
 	mux.HandleFunc("POST /cart/update", app.updateCartHandler)
 
-	// Checkout & Payment
+	// Checkout & Order Confirmation
 	mux.HandleFunc("GET /checkout", app.checkoutPageHandler)
 	mux.HandleFunc("POST /checkout", app.placeOrderHandler)
-	mux.HandleFunc("GET /payment", app.paymentHandler)
+	mux.HandleFunc("POST /checkout/confirm", app.confirmOrderHandler)
 	mux.HandleFunc("GET /order-confirmed", app.orderConfirmedHandler)
-	mux.HandleFunc("GET /payment-failed", app.paymentFailedHandler)
-
-	// API Routes (MPESA & AJAX)
-	mux.HandleFunc("GET /api/order/status", app.apiCheckStatusHandler)   // JS polling
-	mux.HandleFunc("POST /api/callback/mpesa", app.mpesaCallbackHandler) // Safaricom callback
 
 	// Authentication
 	mux.HandleFunc("GET /admin/login", app.loginPageHandler)
@@ -310,14 +291,53 @@ func (app *Application) placeOrderHandler(w http.ResponseWriter, r *http.Request
 	lastName := r.FormValue("last_name")
 	email := r.FormValue("email")
 	whatsapp := r.FormValue("whatsapp")
-	mpesaPhone := r.FormValue("mpesa_phone")
 
-	if firstName == "" || mpesaPhone == "" {
-		http.Error(w, "Name and Phone are required", 400)
+	if firstName == "" || whatsapp == "" {
+		http.Error(w, "Name and WhatsApp number are required", 400)
 		return
 	}
 
 	// 2. Get Cart
+	cartItems := cart.Get(r)
+	if len(cartItems) == 0 {
+		http.Redirect(w, r, "/cakes", http.StatusSeeOther)
+		return
+	}
+	total := cart.Total(cartItems)
+
+	// 3. Review step — nothing is saved yet. The customer confirms
+	// on the next page, which re-posts these details to /checkout/confirm.
+	data := &models.TemplateData{
+		Title:     "Confirm Your Order",
+		Items:     cartItems,
+		Total:     total,
+		FirstName: firstName,
+		LastName:  lastName,
+		Email:     email,
+		Phone:     whatsapp,
+	}
+	app.render(w, r, "confirm.page.html", data)
+}
+
+func (app *Application) confirmOrderHandler(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+
+	// 1. Get Customer Info (re-posted as hidden fields from the review page)
+	firstName := r.FormValue("first_name")
+	lastName := r.FormValue("last_name")
+	email := r.FormValue("email")
+	whatsapp := r.FormValue("whatsapp")
+
+	if firstName == "" || whatsapp == "" {
+		http.Redirect(w, r, "/checkout", http.StatusSeeOther)
+		return
+	}
+
+	// 2. Get Cart (still in the cookie — it is only cleared after placing)
 	cartItems := cart.Get(r)
 	if len(cartItems) == 0 {
 		http.Redirect(w, r, "/cakes", http.StatusSeeOther)
@@ -331,7 +351,7 @@ func (app *Application) placeOrderHandler(w http.ResponseWriter, r *http.Request
 		LastName:       lastName,
 		Email:          email,
 		WhatsappNumber: whatsapp,
-		CustomerPhone:  mpesaPhone,
+		CustomerPhone:  whatsapp,
 		TotalAmount:    total,
 	}
 
@@ -347,7 +367,7 @@ func (app *Application) placeOrderHandler(w http.ResponseWriter, r *http.Request
 		})
 	}
 
-	// 5. Save to Database (FIXED: Uncommented this line!)
+	// 5. Save to Database
 	orderID, err := app.Orders.Create(order, orderItems)
 	if err != nil {
 		log.Println("Failed to create order:", err)
@@ -355,10 +375,10 @@ func (app *Application) placeOrderHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// NOTE: Email logic REMOVED from here.
-	// It is now in mpesaCallbackHandler so it only sends AFTER payment.
+	// 6. Send Emails (customer receipt + admin alert) in the background.
+	app.sendOrderEmails(orderID, firstName, lastName, email, whatsapp, total)
 
-	// 6. Clear the Cart
+	// 7. Clear the Cart
 	http.SetCookie(w, &http.Cookie{
 		Name:   "crave_cart",
 		Value:  "",
@@ -366,48 +386,33 @@ func (app *Application) placeOrderHandler(w http.ResponseWriter, r *http.Request
 		MaxAge: -1,
 	})
 
-	// 7. Redirect to Payment
-	redirectURL := fmt.Sprintf("/payment?order_id=%d", orderID)
+	// 8. Redirect to Confirmation (customer confirms the order via WhatsApp there)
+	redirectURL := fmt.Sprintf("/order-confirmed?id=%d", orderID)
 	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 }
 
-func (app *Application) paymentHandler(w http.ResponseWriter, r *http.Request) {
-	// 1. Get Order ID from URL
-	orderIDStr := r.URL.Query().Get("order_id")
-	var orderID int
-	fmt.Sscanf(orderIDStr, "%d", &orderID)
-
-	// 2. Fetch the Full Order Details from DB
-	order, err := app.Orders.Get(orderID)
-	if err != nil {
-		http.Error(w, "Order not found", 404)
-		return
+// sendOrderEmails fires the customer receipt and admin alert without blocking.
+func (app *Application) sendOrderEmails(orderID int, firstName, lastName, email, whatsapp string, total float64) {
+	detailItems, _ := app.Orders.GetOrderItems(orderID)
+	emailData := struct {
+		ID            int
+		CustomerName  string
+		CustomerPhone string
+		TotalAmount   float64
+		Items         interface{}
+	}{
+		ID:            orderID,
+		CustomerName:  firstName + " " + lastName,
+		CustomerPhone: whatsapp,
+		TotalAmount:   total,
+		Items:         detailItems,
 	}
-
-	// 3. Initiate STK Push (Only if pending)
-	if order.Status == "PENDING" {
-		// Format phone to 254...
-		phone := order.CustomerPhone
-		if len(phone) > 0 && phone[0] == '0' {
-			phone = "254" + phone[1:]
-		}
-
-		// Trigger M-Pesa
-		err := app.Mpesa.InitiateSTKPush(phone, order.TotalAmount, orderID)
-		if err != nil {
-			log.Println("Mpesa Error:", err)
-		}
+	if email != "" {
+		go app.Mailer.Send(email, "Order Received - Crave & Glaze #"+fmt.Sprint(orderID), "customer_receipt.html", emailData)
 	}
-
-	// 4. Prepare Data for Template
-	// We wrap the order in a struct matching the template's expectation {{.Order}}
-	data := &models.TemplateData{
-		Title: "Processing Payment",
-		Order: order,
+	if adminEmail := os.Getenv("ADMIN_EMAIL"); adminEmail != "" {
+		go app.Mailer.Send(adminEmail, "🔔 New Order #"+fmt.Sprint(orderID), "admin_alert.html", emailData)
 	}
-
-	// 5. Render
-	app.render(w, r, "payment.page.html", data)
 }
 
 func (app *Application) adminDashboardHandler(w http.ResponseWriter, r *http.Request) {
@@ -835,192 +840,6 @@ func (app *Application) adminEditProductHandler(w http.ResponseWriter, r *http.R
 	http.Redirect(w, r, "/admin/products", http.StatusSeeOther)
 }
 
-// mpesaCallbackHandler receives the data from Safaricom
-
-// orderStatusHandler allows the Frontend to ask "Is it paid yet?"
-func (app *Application) orderStatusHandler(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("id")
-	var id int
-	fmt.Sscanf(idStr, "%d", &id)
-
-	var status string
-	err := app.Orders.DB.QueryRow("SELECT status FROM orders WHERE id=$1", id).Scan(&status)
-	if err != nil {
-		http.Error(w, "Order not found", 404)
-		return
-	}
-
-	// Return simple JSON
-	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(fmt.Sprintf(`{"status": "%s"}`, status)))
-}
-func (app *Application) apiCheckStatusHandler(w http.ResponseWriter, r *http.Request) {
-	// 1. Get the Order ID
-	idStr := r.URL.Query().Get("id")
-	var id int
-	fmt.Sscanf(idStr, "%d", &id)
-
-	// 2. Fetch the current status from the Database
-	var status string
-	stmt := `SELECT status FROM orders WHERE id = $1`
-	err := app.Orders.DB.QueryRow(stmt, id).Scan(&status)
-	if err != nil {
-		// If order not found or error, return generic JSON error
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"status": "ERROR"}`))
-		return
-	}
-
-	// 3. Return as JSON
-	// The JavaScript expects: { "status": "PAID" } or { "status": "PENDING" }
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"status": status,
-	})
-}
-
-// MpesaCallbackStructure defines the JSON format sent by Safaricom
-type MpesaCallbackStructure struct {
-	Body struct {
-		StkCallback struct {
-			MerchantRequestID string
-			CheckoutRequestID string
-			ResultCode        int
-			ResultDesc        string
-			CallbackMetadata  struct {
-				Item []struct {
-					Name  string
-					Value interface{}
-				}
-			}
-		}
-	}
-}
-
-func (app *Application) mpesaCallbackHandler(w http.ResponseWriter, r *http.Request) {
-	// 1. Decode JSON
-	var callback MpesaCallbackStructure
-	err := json.NewDecoder(r.Body).Decode(&callback)
-	if err != nil {
-		log.Println("Error decoding callback:", err)
-		return
-	}
-	defer r.Body.Close()
-
-	// 2. Check Result Code
-	resultCode := callback.Body.StkCallback.ResultCode
-
-	// 3. Extract Phone & Receipt
-	var phoneNumber string
-	var mpesaReceipt string
-
-	items := callback.Body.StkCallback.CallbackMetadata.Item
-	for _, item := range items {
-		if item.Name == "PhoneNumber" {
-			if val, ok := item.Value.(float64); ok {
-				phoneNumber = fmt.Sprintf("%.0f", val)
-			}
-		}
-		if item.Name == "MpesaReceiptNumber" {
-			if val, ok := item.Value.(string); ok {
-				mpesaReceipt = val
-			}
-		}
-	}
-
-	// 4. Handle Logic
-	if resultCode == 0 {
-		log.Printf("Payment Confirmed: %s - %s", phoneNumber, mpesaReceipt)
-
-		// Phone formatting (254 -> 07)
-		altPhone := phoneNumber
-		if len(phoneNumber) == 12 && phoneNumber[0:3] == "254" {
-			altPhone = "0" + phoneNumber[3:]
-		}
-
-		// 5. Update DB & Get User Info for Email (Using RETURNING)
-		stmt := `
-			UPDATE orders 
-			SET status = 'PAID', mpesa_receipt = $1
-			WHERE (customer_phone = $2 OR customer_phone = $3) 
-			AND status = 'PENDING'
-			AND id = (
-				SELECT id FROM orders 
-				WHERE (customer_phone = $2 OR customer_phone = $3) 
-				AND status = 'PENDING' 
-				ORDER BY id DESC LIMIT 1
-			)
-			RETURNING id, email, first_name, last_name, total_amount
-		`
-
-		var orderID int
-		var email, firstName, lastName string
-		var amount float64
-
-		// We scan the returned values
-		err := app.Orders.DB.QueryRow(stmt, mpesaReceipt, phoneNumber, altPhone).Scan(&orderID, &email, &firstName, &lastName, &amount)
-
-		if err != nil {
-			log.Println("Error updating DB or finding order:", err)
-		} else {
-			// ==========================================
-			// 6. SEND EMAILS (Corrected)
-			// ==========================================
-
-			// We need to fetch the items to show them in the receipt
-			// (Assuming app.Orders.GetOrderItems exists from previous steps)
-			// If this fails, we just send an empty list to avoid crashing
-			orderItems, _ := app.Orders.GetOrderItems(orderID)
-
-			// Construct the data object for the HTML template
-			emailData := struct {
-				ID            int
-				CustomerName  string
-				CustomerPhone string
-				TotalAmount   float64
-				Items         interface{} // interface{} allows us to pass your OrderDetailItem slice
-				Receipt       string
-			}{
-				ID:            orderID,
-				CustomerName:  firstName + " " + lastName,
-				CustomerPhone: phoneNumber,
-				TotalAmount:   amount,
-				Items:         orderItems,
-				Receipt:       mpesaReceipt,
-			}
-
-			// A. Customer Email
-			if email != "" {
-				// FIX: Passing 4 arguments: To, Subject, TemplateFile, Data
-				go app.Mailer.Send(email, "Payment Received - Order #"+fmt.Sprint(orderID), "customer_receipt.html", emailData)
-			}
-
-			// B. Admin Email
-			adminEmail := os.Getenv("ADMIN_EMAIL")
-			if adminEmail != "" {
-				// FIX: Passing 4 arguments here too
-				go app.Mailer.Send(adminEmail, "💰 New Payment Received!", "admin_alert.html", emailData)
-			}
-		}
-
-	} else {
-		// PAYMENT FAILED logic
-		log.Printf("Payment Failed/Cancelled. Code: %d", resultCode)
-
-		if phoneNumber != "" {
-			altPhone := phoneNumber
-			if len(phoneNumber) == 12 && phoneNumber[0:3] == "254" {
-				altPhone = "0" + phoneNumber[3:]
-			}
-			stmt := `UPDATE orders SET status = 'FAILED' WHERE (customer_phone = $1 OR customer_phone = $2) AND status = 'PENDING'`
-			app.Orders.DB.Exec(stmt, phoneNumber, altPhone)
-		}
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`{"ResultCode":0,"ResultDesc":"Accepted"}`))
-}
-
 func (app *Application) loginPageHandler(w http.ResponseWriter, r *http.Request) {
 	app.render(w, r, "admin/login.page.html", &models.TemplateData{Title: "Admin Login"})
 }
@@ -1078,10 +897,6 @@ func (app *Application) requireAdmin(next http.HandlerFunc) http.HandlerFunc {
 		next(w, r)
 	}
 }
-func (app *Application) paymentFailedHandler(w http.ResponseWriter, r *http.Request) {
-	app.render(w, r, "payment_failed.page.html", &models.TemplateData{Title: "Payment Failed"})
-}
-
 func (app *Application) orderConfirmedHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id")
 	var id int
@@ -1094,12 +909,61 @@ func (app *Application) orderConfirmedHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	items, err := app.Orders.GetOrderItems(id)
+	if err != nil {
+		log.Println("Error fetching order items:", err)
+	}
+
 	data := &models.TemplateData{
-		Title: "Order Confirmed",
-		Order: order,
+		Title:      "Order Confirmed",
+		Order:      order,
+		OrderItems: items,
+		WhatsAppURL: whatsAppOrderURL(order, items),
 	}
 
 	app.render(w, r, "order_confirmed.page.html", data)
+}
+
+// adminWhatsAppNumber returns the bakery's WhatsApp number in wa.me format
+// (digits only, with country code). Configure via ADMIN_WHATSAPP.
+func adminWhatsAppNumber() string {
+	raw := os.Getenv("ADMIN_WHATSAPP")
+	if raw == "" {
+		raw = "254735792437"
+	}
+	digits := ""
+	for _, c := range raw {
+		if c >= '0' && c <= '9' {
+			digits += string(c)
+		}
+	}
+	// Local 07... form -> 254...
+	if len(digits) == 10 && digits[0] == '0' {
+		digits = "254" + digits[1:]
+	}
+	return digits
+}
+
+// whatsAppOrderURL builds a wa.me link with the order summary pre-filled,
+// so one tap from the customer delivers the order to the admin's WhatsApp.
+func whatsAppOrderURL(order *models.Order, items []repository.OrderDetailItem) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "Hello Crave & Glaze! I just placed an order on the website.\n\n")
+	fmt.Fprintf(&b, "Order #%d\n", order.ID)
+	fmt.Fprintf(&b, "Name: %s %s\n", order.FirstName, order.LastName)
+	fmt.Fprintf(&b, "Phone: %s\n", order.CustomerPhone)
+	b.WriteString("Items:\n")
+	for _, it := range items {
+		fmt.Fprintf(&b, "- %dx %s (%s) - KES %.2f\n", it.Quantity, it.ProductName, it.WeightLabel, it.Price)
+		if it.Icing != "" {
+			fmt.Fprintf(&b, "  Icing: %s\n", it.Icing)
+		}
+		if it.Message != "" {
+			fmt.Fprintf(&b, "  Message: %s\n", it.Message)
+		}
+	}
+	fmt.Fprintf(&b, "\nTotal: KES %.2f", order.TotalAmount)
+	return "https://wa.me/" + adminWhatsAppNumber() + "?text=" + url.QueryEscape(b.String())
 }
 func (app *Application) searchHandler(w http.ResponseWriter, r *http.Request) {
 	// Get the search term from the URL (e.g., /search?q=chocolate)

@@ -1,0 +1,66 @@
+{{template "base" .}}
+
+{{define "title"}}Confirm Your Order{{end}}
+
+{{define "content"}}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h2 class="mb-1 brand-font text-danger text-center">Review Your Order</h2>
+            <p class="text-muted text-center mb-4">Please confirm your details below.</p>
+
+            <!-- Contact details entered at checkout -->
+            <div class="card p-4 shadow-sm border-0 mb-4">
+                <h5 class="mb-3">Your Details</h5>
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Name</dt>
+                    <dd class="col-sm-8">{{.FirstName}} {{.LastName}}</dd>
+                    <dt class="col-sm-4">Email</dt>
+                    <dd class="col-sm-8">{{.Email}}</dd>
+                    <dt class="col-sm-4">WhatsApp</dt>
+                    <dd class="col-sm-8">{{.Phone}}</dd>
+                </dl>
+            </div>
+
+            <!-- Cart summary -->
+            <div class="card p-4 shadow-sm border-0 mb-4">
+                <h5 class="mb-3">Order Items</h5>
+                <ul class="list-group shadow-sm">
+                    {{range .Items}}
+                    <li class="list-group-item d-flex justify-content-between lh-sm">
+                        <div class="d-flex align-items-center">
+                            <img src="{{.ImageURL}}" alt="cake" class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                            <div>
+                                <h6 class="my-0">{{.ProductName}}</h6>
+                                <small class="text-muted">Qty: {{.Quantity}}{{if .Icing}} | Icing: {{.Icing}}{{end}}{{if .Message}} | "{{.Message}}"{{end}}</small>
+                            </div>
+                        </div>
+                        <span class="text-muted">KES {{.Price}}</span>
+                    </li>
+                    {{end}}
+                    <li class="list-group-item d-flex justify-content-between bg-light">
+                        <span class="fw-bold">Total (KES)</span>
+                        <strong class="text-success">{{.Total}}</strong>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Confirm / edit -->
+            <form action="/checkout/confirm" method="POST" onsubmit="document.getElementById('confirm-btn').disabled = true;">
+                <input type="hidden" name="first_name" value="{{.FirstName}}">
+                <input type="hidden" name="last_name" value="{{.LastName}}">
+                <input type="hidden" name="email" value="{{.Email}}">
+                <input type="hidden" name="whatsapp" value="{{.Phone}}">
+                <div class="d-grid gap-2 col-10 mx-auto">
+                    <button id="confirm-btn" class="btn btn-success btn-lg rounded-pill" type="submit">
+                        Confirm & Place Order — KES {{.Total}}
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" onclick="history.back()">
+                        ← Edit Details
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{{end}}

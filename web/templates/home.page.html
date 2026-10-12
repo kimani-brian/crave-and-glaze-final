@@ -9,7 +9,7 @@
         <div class="row align-items-center min-vh-75">
             
             <!-- Left Side: Text Content -->
-            <div class="col-lg-6 mb-5 mb-lg-0 z-index-2">
+            <div class="col-lg-6 mb-5 mb-lg-0 z-index-2 text-center text-lg-start">
                 <span class="badge bg-white text-danger shadow-sm px-3 py-2 rounded-pill mb-3">
                     🎂 Welcome to Crave & Glaze
                 </span>
@@ -108,17 +108,21 @@
         <h2 class="fw-bold">Our Best Sellers</h2>
     </div>
     
-    <div class="row row-cols-1 row-cols-md-3 g-4">
+    <div class="row row-cols-2 row-cols-md-3 g-3 g-md-4">
         {{range .Products}}
         <div class="col">
             <div class="card h-100 shadow-sm border-0 cake-card">
-                <div style="height: 250px; overflow: hidden;">
-                    <img src="{{.ImageURL}}" class="card-img-top w-100 h-100" style="object-fit: cover;" alt="{{.Name}}">
-                </div>
-                <div class="card-body text-center">
-                    <h5 class="card-title fw-bold">{{.Name}}</h5>
-                    <p class="text-muted mb-2">Starting from KES {{.StartingPrice}}</p>
-                    <a href="/product?id={{.ID}}" class="btn btn-outline-danger btn-sm rounded-pill">View Details</a>
+                <a href="/product?id={{.ID}}">
+                    <img src="{{.ImageURL}}" class="card-img-top cake-img" alt="{{.Name}}">
+                </a>
+                <div class="card-body">
+                    <a href="/product?id={{.ID}}" class="text-decoration-none text-dark">
+                        <h5 class="card-title fw-bold cake-name">{{.Name}}</h5>
+                    </a>
+                    <p class="text-muted cake-desc">{{.Description}}</p>
+                    <div class="d-grid">
+                        <a href="/product?id={{.ID}}" class="btn btn-primary btn-sm">Order</a>
+                    </div>
                 </div>
             </div>
         </div>

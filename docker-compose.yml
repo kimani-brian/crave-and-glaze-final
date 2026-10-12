@@ -24,11 +24,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
       
-      - MPESA_KEY=${MPESA_KEY}
-      - MPESA_SECRET=${MPESA_SECRET}
-      - MPESA_PASSKEY=${MPESA_PASSKEY}
-      - MPESA_ENV=${MPESA_ENV}
-      - MPESA_CALLBACK_URL=${MPESA_CALLBACK_URL}
+      - ADMIN_WHATSAPP=${ADMIN_WHATSAPP}
       
       - ADMIN_USERNAME=${ADMIN_USERNAME}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
@@ -38,6 +34,7 @@ services:
       - SMTP_EMAIL=${SMTP_EMAIL}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_WHATSAPP=${ADMIN_WHATSAPP}
     volumes:
       # Admin-uploaded product images persist across rebuilds
       - uploads_data:/root/web/static/uploads

@@ -95,10 +95,40 @@
     </main>
 
     <!-- FOOTER -->
-    <footer class="footer mt-auto py-4 bg-dark text-white">
-        <div class="container text-center">
-            <p class="mb-0">Fresh & Delicious Cakes Made with Love</p>
-            <small class="text-white-50">&copy; {{.CurrentYear}} Crave & Glaze. All rights reserved.</small>
+    <footer class="footer mt-auto bg-dark text-white site-footer">
+        <div class="container py-5">
+            <div class="row g-4 text-center text-md-start">
+                <div class="col-md-4">
+                    <h6 class="brand-font mb-2">Crave & Glaze</h6>
+                    <p class="text-white-50 small mb-0">Fresh cakes baked to order.</p>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-uppercase small fw-bold mb-3">Shop</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><a href="/cakes" class="footer-link">All Cakes</a></li>
+                        {{range .Categories}}
+                        <li class="mb-2"><a href="/category?id={{.ID}}" class="footer-link">{{.Name}}</a></li>
+                        {{end}}
+                        <li class="mb-2"><a href="/cart" class="footer-link">Cart</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-uppercase small fw-bold mb-3">Contact</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <a href="https://wa.me/254735792437" target="_blank" rel="noopener" class="footer-link">
+                                <i class="bi bi-whatsapp me-1"></i> +254 735 792437
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="border-top border-secondary">
+            <div class="container py-3 d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+                <small class="text-white-50 mb-0">&copy; {{.CurrentYear}} Crave & Glaze. All rights reserved.</small>
+                <a href="/admin/login" class="footer-link small">Admin</a>
+            </div>
         </div>
     </footer>
 

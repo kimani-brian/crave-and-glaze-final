@@ -4,19 +4,22 @@
 
 {{define "content"}}
 <div class="container py-5">
-    <h2 class="mb-4 text-center">Our Delicious Cakes</h2>
+    <h2 class="mb-4 text-center">Our Cakes</h2>
     
-    <div class="row row-cols-1 row-cols-md-3 g-4">
+    <div class="row row-cols-2 row-cols-md-3 g-3 g-md-4">
         {{range .Products}}
         <div class="col">
             <div class="card h-100 shadow-sm border-0 cake-card">
-                <img src="{{.ImageURL}}" class="card-img-top" alt="{{.Name}}" style="height: 250px; object-fit: cover;">
+                <a href="/product?id={{.ID}}">
+                    <img src="{{.ImageURL}}" class="card-img-top cake-img" alt="{{.Name}}">
+                </a>
                 <div class="card-body">
-                    <h5 class="card-title">{{.Name}}</h5>
-                    <p class="card-text text-muted small">{{.Description}}</p>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="fw-bold text-primary">From KES {{.StartingPrice}}</span>
-                        <a href="/product?id={{.ID}}" class="btn btn-outline-danger btn-sm">View Options</a>
+                    <a href="/product?id={{.ID}}" class="text-decoration-none text-dark">
+                        <h5 class="card-title fw-bold cake-name">{{.Name}}</h5>
+                    </a>
+                    <p class="text-muted cake-desc">{{.Description}}</p>
+                    <div class="d-grid">
+                        <a href="/product?id={{.ID}}" class="btn btn-primary btn-sm">Order</a>
                     </div>
                 </div>
             </div>

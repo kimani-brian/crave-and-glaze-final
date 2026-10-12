@@ -35,7 +35,7 @@ func (m *OrderModel) Create(order *models.Order, items []models.OrderItem) (int,
 		order.LastName,
 		order.Email,
 		order.WhatsappNumber,
-		order.CustomerPhone, // MPESA Number
+		order.CustomerPhone,
 		order.TotalAmount,
 		time.Now(),
 	).Scan(&newID)
